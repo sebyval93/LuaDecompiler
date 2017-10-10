@@ -1,5 +1,4 @@
 #include "decompiler.h"
-//#include "luacdefs.h"
 #include <filesystem>
 #include <iostream>
 #include <fstream>
@@ -7,19 +6,20 @@
 #include "lex.yy.h"
 #include "luac\luac.h"
 
+// function that loads binary lua scripts
 extern "C" Proto* loadproto(const char* filename);
 
-#define P_OP(x)	//printf("%-11s\t\n",x);
+#define P_OP(x)
 #define P_NONE
-#define P_AB	//GETARG_A(instr);GETARG_B(instr);
-#define P_F	//GETARG_A(instr);GETARG_B(instr);
-#define P_J	//GETARG_S(instr);
-#define P_Q	//GETARG_U(instr);
-#define P_K	//GETARG_U(instr);
-#define P_L	//GETARG_U(instr);
-#define P_N	//GETARG_U(instr);
-#define P_S	//printf("ARGS: %d\n", GETARG_S(instr));
-#define P_U	//GETARG_U(instr);
+#define P_AB	
+#define P_F	
+#define P_J	
+#define P_Q	
+#define P_K	
+#define P_L	
+#define P_N	
+#define P_S	
+#define P_U	
 
 
 // TODO: test settable and getindexed extensively
@@ -99,8 +99,6 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 			context.pop_back();
 		}
 
-		//std::cout << line << "\n";
-
 		switch (GET_OPCODE(instr))
 		{
 		case OP_END:
@@ -148,8 +146,6 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 				std::vector<StackValue> args;
 				std::string funcName;
 				std::string tempStr;
-
-				//callBase -= (funcInfo.nForLoopLevel * 3);
 
 				funcName = codeStack[callBase].str;
 
@@ -226,15 +222,7 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 			}
 			//P_AB;
 			break;
-			/*
-		case OP_TAILCALL:
-			P_OP("UNIMPLEMENTED TAILCALL")
-			{
-				showErrorMessage("Unimplemented opcode TAILCALL! exiting!", true);
-			}
-			P_AB;
-			break;
-			*/
+
 		case OP_PUSHNIL:
 			P_OP("UNIMPLEMENTED PUSHNIL");
 			{
@@ -257,8 +245,6 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 				for (int i = 0; i < numItemsToPop; ++i)
 				{
 					codeStack.pop_back();
-					//funcInfo.locals.erase(funcInfo.nLocals - 1);
-					//--funcInfo.nLocals;
 				}
 			}
 			//P_U;
@@ -297,7 +283,6 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 				result.type = ValueType::STRING;
 				codeStack.push_back(result);
 			}
-			//codeStack.push_back(std::string(tf->kstr[GETARG_U(instr)]->str));
 			//P_Q;
 			break;
 
@@ -324,7 +309,6 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 
 				stackValue.type = ValueType::INT;
 				codeStack.push_back(stackValue);
-				//funcStack.push(obj);
 			}
 			//P_N;
 			break;
@@ -469,9 +453,6 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 				std::string str = tf->kstr[stringIndex]->str;
 				StackValue target, result;
 
-				/*target = codeStack.back();
-				codeStack.pop_back();*/
-				//result.str = target.str + ":" + str;
 				result.str =  ":" + str;
 				result.type = ValueType::STRING_PUSHSELF;
 
@@ -487,8 +468,6 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 				StackValue result;
 				if (numElems > 0)
 				{
-					/*if (codeStack.size() > 0 && codeStack.back().type == ValueType::STRING)
-					result.str += ", ";*/
 					result.str += "{ ";
 					result.type = ValueType::TABLE_BRACE;
 					result.index = numElems;
@@ -1260,13 +1239,6 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 			P_OP("FORPREP");
 			{
 				StackValue val1, val2, val3;
-				/*
-				val3 = codeStack.back();
-				codeStack.pop_back();
-				val2 = codeStack.back();
-				codeStack.pop_back();
-				val1 = codeStack.back();
-				codeStack.pop_back();*/
 				val3 = codeStack[codeStack.size() - 1];
 				val2 = codeStack[codeStack.size() - 2];
 				val1 = codeStack[codeStack.size() - 3];
@@ -1368,27 +1340,6 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 					funcInfo.upvalues.insert(std::make_pair(numUpvalues - (i + 1), upvalue.str));
 				}
 
-				// TODO: increase identation level
-				//funcStr += "function ";
-
-				//stackValue.index = funcStr.size();
-				//stackValue.type = ValueType::CLOSURE_STR_INDEX;
-
-				//findClosureArgs(tf->kproto[closureIndex], funcInfo);
-
-				//int numArgs = funcInfo.locals.size();
-				/*
-				funcStr += '(';
-				for (int i = 0; i < numArgs; ++i)
-				{
-					funcStr += ("arg" + std::to_string(i + 1));
-
-					if (i != (numArgs - 1))
-						funcStr += ", ";
-				}
-				funcStr += ")\n";
-				*/
-
 				// decompile closure
 				funcInfo.isMain = false;
 				closureSrc = decompileFunction(tf->kproto[closureIndex], funcInfo);
@@ -1407,7 +1358,6 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 
 		if (instr == OP_END)
 		{
-			//sourceStr += funcStr;
 			if (!funcInfo.isMain)
 				funcStr += "end\n";
 
