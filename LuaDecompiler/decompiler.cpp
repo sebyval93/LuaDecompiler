@@ -102,12 +102,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 		switch (GET_OPCODE(instr))
 		{
 		case OP_END:
-			P_OP("END");
-			P_NONE;
 			break;
 
 		case OP_RETURN:
-			P_OP("RETURN");
 			{
 				int returnBase = GETARG_U(instr);
 				std::vector<StackValue> args;
@@ -133,12 +130,10 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 
 				funcStr += (tempStr + '\n');
 			}
-			//P_U;
 			break;
 
 		case OP_CALL:
 		case OP_TAILCALL:
-			P_OP("CALL");
 			{
 
 				int callBase = GETARG_A(instr);
@@ -220,11 +215,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 				};
 
 			}
-			//P_AB;
 			break;
 
 		case OP_PUSHNIL:
-			P_OP("UNIMPLEMENTED PUSHNIL");
 			{
 				int numNils = GETARG_U(instr);
 				StackValue result;
@@ -234,11 +227,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 				for (int i = 0; i < numNils; ++i)
 					codeStack.push_back(result);
 			}
-			//P_U;
 			break;
 
 		case OP_POP:
-			P_OP("POP");
 			{
 				int numItemsToPop = GETARG_U(instr);
 
@@ -247,22 +238,18 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 					codeStack.pop_back();
 				}
 			}
-			//P_U;
 			break;
 
 		case OP_PUSHINT:
-			P_OP("PUSHINT");
 			{
 				StackValue stackValue;
 				stackValue.str = std::to_string(GETARG_S(instr));
 				stackValue.type = ValueType::INT;
 				codeStack.push_back(stackValue);
 			}
-			//P_S;
 			break;
 
 		case OP_PUSHSTRING:
-			P_OP("PUSHSTRING");
 			{
 				std::string str;
 				StackValue result;
@@ -283,11 +270,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 				result.type = ValueType::STRING;
 				codeStack.push_back(result);
 			}
-			//P_Q;
 			break;
 
 		case OP_PUSHNUM:
-			P_OP("PUSHNUM");
 			{
 				StackValue stackValue;
 				stackValue.str = std::to_string(tf->knum[GETARG_U(instr)]);
@@ -310,11 +295,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 				stackValue.type = ValueType::INT;
 				codeStack.push_back(stackValue);
 			}
-			//P_N;
 			break;
 
 		case OP_PUSHNEGNUM:
-			P_OP("PUSHNEGNUM");
 			{
 				StackValue stackValue;
 				stackValue.str = std::to_string(tf->knum[GETARG_U(instr)]);
@@ -339,11 +322,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 				stackValue.type = ValueType::INT;
 				codeStack.push_back(stackValue);
 			}
-			//P_N;
 			break;
 
 		case OP_PUSHUPVALUE:
-			P_OP("PUSHUPVALUE");
 			{
 				int upvalueIndex = GETARG_U(instr);
 				StackValue result;
@@ -353,11 +334,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 
 				codeStack.push_back(result);
 			}
-			//P_U;
 			break;
 
 		case OP_GETLOCAL:
-			P_OP("GETLOCAL");
 			{
 				StackValue stackValue;
 				int localIndex = GETARG_U(instr);
@@ -377,11 +356,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 				stackValue.type = ValueType::STRING_LOCAL;
 				codeStack.push_back(stackValue);
 			}
-			//P_L;
 			break;
 
 		case OP_GETGLOBAL:
-			P_OP("GETGLOBAL");
 			{
 				StackValue stackValue;
 				stackValue.index = GETARG_U(instr);
@@ -389,11 +366,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 				stackValue.type = ValueType::STRING_GLOBAL;
 				codeStack.push_back(stackValue);
 			}
-			//P_K;
 			break;
 
 		case OP_GETTABLE:
-			P_OP("GETTABLE");
 			{
 				std::vector<StackValue> args;
 				StackValue result;
@@ -407,11 +382,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 
 				codeStack.push_back(result);
 			}
-			//P_NONE;
 			break;
 
 		case OP_GETDOTTED:
-			P_OP("GETDOTTED");
 			{
 				int stringIndex = GETARG_U(instr);
 				std::string str = tf->kstr[stringIndex]->str;
@@ -427,7 +400,6 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 			break;
 
 		case OP_GETINDEXED:
-			P_OP("UNIMPLEMENTED GETINDEXED");
 			{
 				//showErrorMessage("Unimplemented opcode GETINDEXED! exiting!", true);
 
@@ -443,11 +415,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 
 				codeStack.push_back(result);
 			}
-			P_L;
 			break;
 
 		case OP_PUSHSELF:
-			P_OP("PUSHSELF");
 			{
 				int stringIndex = GETARG_U(instr);
 				std::string str = tf->kstr[stringIndex]->str;
@@ -458,11 +428,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 
 				codeStack.push_back(result);
 			}
-			//P_K;
 			break;
 
 		case OP_CREATETABLE:
-			P_OP("CREATETABLE");
 			{
 				int numElems = GETARG_U(instr);
 				StackValue result;
@@ -480,11 +448,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 
 				codeStack.push_back(result);
 			}
-			//P_U;
 			break;
 
 		case OP_SETLOCAL:
-			P_OP("SETLOCAL");
 			{
 				StackValue val;
 				std::string local, result;
@@ -503,11 +469,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 
 				funcStr += result;
 			}
-			//P_L;
 			break;
 
 		case OP_SETGLOBAL:
-			P_OP("SETGLOBAL");
 			{
 				StackValue val;
 				std::string global, result;
@@ -532,11 +496,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 				}
 
 			}
-			//P_K;
 			break;
 
 		case OP_SETTABLE:
-			P_OP("SETTABLE");
 			{
 				int targetIndex = GETARG_A(instr);
 				int numElems = GETARG_B(instr);
@@ -567,11 +529,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 					showErrorMessage("SETTABLE " + std::to_string(targetIndex) + " " + std::to_string(numElems) + " not implemented!!!", false);
 				}
 			}
-			//P_AB;
 			break;
 
 		case OP_SETLIST:
-			P_OP("SETLIST");
 			{
 				int targetIndex = GETARG_A(instr);
 				int numItems = GETARG_B(instr);
@@ -634,11 +594,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 				codeStack.push_back(result);
 
 			}
-			//P_AB;
 			break;
 
 		case OP_SETMAP:
-			P_OP("SETMAP");
 			{
 				int numElems = GETARG_U(instr);
 				StackValue identifier, mapValue, tableBrace, result;
@@ -703,11 +661,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 
 				codeStack.push_back(result);
 			}
-			//P_U;
 			break;
 
 		case OP_ADD:
-			P_OP("ADD");
 			{
 				StackValue y, x, result;
 				y = codeStack.back();
@@ -722,7 +678,6 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 			break;
 
 		case OP_ADDI:
-			P_OP("ADDI");
 			{
 				int value;
 				StackValue stackValue;
@@ -741,11 +696,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 				newValue.type = ValueType::STRING_GLOBAL;
 				codeStack.push_back(newValue);
 			}
-			//P_S;
 			break;
 
 		case OP_SUB:
-			P_OP("SUB");
 			{
 				StackValue y, x, result;
 				y = codeStack.back();
@@ -760,7 +713,6 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 			break;
 
 		case OP_MULT:
-			P_OP("MULT");
 			{
 				StackValue y, x, result;
 				y = codeStack.back();
@@ -775,7 +727,6 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 			break;
 
 		case OP_DIV:
-			P_OP("DIV");
 			{
 				StackValue y, x, result;
 				y = codeStack.back();
@@ -790,7 +741,6 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 			break;
 
 		case OP_POW:
-			P_OP("POW");
 			{
 				StackValue y, x, result;
 				y = codeStack.back();
@@ -805,7 +755,6 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 			break;
 
 		case OP_CONCAT:
-			P_OP("CONCAT");
 			{
 				int numArgs = GETARG_U(instr);
 				StackValue result;
@@ -825,11 +774,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 				result.type = ValueType::STRING_GLOBAL;
 				codeStack.push_back(result);
 			}
-			//P_U;
 			break;
 
 		case OP_MINUS:
-			P_OP("MINUS");
 			{
 				StackValue x, result;
 				x = codeStack.back();
@@ -839,11 +786,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 				result.type = ValueType::STRING_GLOBAL;
 				codeStack.push_back(result);
 			}
-			P_NONE;
 			break;
 
 		case OP_NOT:
-			P_OP("UNIMPLEMENTED NOT");
 			{
 				// showErrorMessage("Unimplemented opcode NOT! exiting!", true);
 				std::string arg = "not " + codeStack.back().str;
@@ -855,11 +800,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 
 				codeStack.push_back(result);
 			}
-			P_NONE;
 			break;
 
 		case OP_JMPNE:
-			P_OP("UNIMPLEMENTED JMPNE");
 			{
 				//showErrorMessage("Unimplemented opcode JMPNE! exiting!", true);
 				std::string arg1 = codeStack.back().str;
@@ -891,11 +834,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 					context.back().dest = elem.dest;
 				}
 			}
-			P_J;
 			break;
 
 		case OP_JMPEQ:
-			P_OP("UNIMPLEMENTED JMPEQ");
 			{
 				//showErrorMessage("Unimplemented opcode JMPEQ! exiting!", true);
 				std::string arg1 = codeStack.back().str;
@@ -928,11 +869,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 				}
 
 			}
-			P_J;
 			break;
 
 		case OP_JMPLT:
-			P_OP("UNIMPLEMENTED JMPLT");
 			{
 				//showErrorMessage("Unimplemented opcode JMPLT! exiting!", true);
 				std::string arg1 = codeStack.back().str;
@@ -964,11 +903,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 					context.back().dest = elem.dest;
 				}
 			}
-			P_J;
 			break;
 
 		case OP_JMPLE:
-			P_OP("UNIMPLEMENTED JMPLE");
 			{
 				//showErrorMessage("Unimplemented opcode JMPLE! exiting!", true);
 				std::string arg1 = codeStack.back().str;
@@ -1000,11 +937,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 					context.back().dest = elem.dest;
 				}
 			}
-			P_J;
 			break;
 
 		case OP_JMPGT:
-			P_OP("UNIMPLEMENTED JMPGT");
 			{
 				//showErrorMessage("Unimplemented opcode JMPLE! exiting!", true);
 				std::string arg1 = codeStack.back().str;
@@ -1036,11 +971,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 					context.back().dest = elem.dest;
 				}
 			}
-			P_J;
 			break;
 
 		case OP_JMPGE:
-			P_OP("UNIMPLEMENTED JMPGE");
 			{
 				//showErrorMessage("Unimplemented opcode JMPLE! exiting!", true);
 				std::string arg1 = codeStack.back().str;
@@ -1072,11 +1005,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 					context.back().dest = elem.dest;
 				}
 			}
-			P_J;
 			break;
 
 		case OP_JMPT:
-			P_OP("UNIMPLEMENTED JMPT");
 			{
 				//showErrorMessage("Unimplemented opcode JMPLE! exiting!", true);
 				std::string arg0 = codeStack.back().str;
@@ -1105,11 +1036,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 					context.back().dest = elem.dest;
 				}
 			}
-			P_J;
 			break;
 
 		case OP_JMPF:
-			P_OP("UNIMPLEMENTED JMPF");
 			{
 				//showErrorMessage("Unimplemented opcode JMPLE! exiting!", true);
 				std::string arg0 = codeStack.back().str;
@@ -1138,11 +1067,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 					context.back().dest = elem.dest;
 				}
 			}
-			P_J;
 			break;
 
 		case OP_JMPONT:
-			P_OP("UNIMPLEMENTED JMPONT");
 			{
 				// IDK YET
 				//showErrorMessage("Unimplemented opcode JMPONT! exiting!", true);
@@ -1172,11 +1099,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 					context.back().dest = elem.dest;
 				}
 			}
-			P_J;
 			break;
 
 		case OP_JMPONF:
-			P_OP("UNIMPLEMENTED JMPONF");
 			{
 				// IDK YET
 				//showErrorMessage("Unimplemented opcode JMPONF! exiting!", true);
@@ -1206,11 +1131,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 					context.back().dest = elem.dest;
 				}
 			}
-			P_J;
 			break;
 
 		case OP_JMP:
-			P_OP("UNIMPLEMENTED JMP");
 			{
 				showErrorMessage("Unimplemented opcode JMP! continuing!", false);
 				int dest = GETARG_S(instr);
@@ -1219,11 +1142,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 					context.back().type = Context::WHILE;
 				}
 			}
-			P_J;
 			break;
 
 		case OP_PUSHNILJMP:
-			P_OP("UNIMPLEMENTED PUSHNILJMP");
 			{
 				//showErrorMessage("Unimplemented opcode PUSHNILJMP! exiting!", true);
 				StackValue result;
@@ -1232,11 +1153,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 
 				codeStack.push_back(result);
 			}
-			P_NONE;
 			break;
 
 		case OP_FORPREP:
-			P_OP("FORPREP");
 			{
 				StackValue val1, val2, val3;
 				val3 = codeStack[codeStack.size() - 1];
@@ -1254,11 +1173,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 				funcStr += "for " + locName + " = " + val1.str + ", " + val2.str + ", " +
 					val3.str + "\ndo\n";
 			}
-			P_J;
 			break;
 
 		case OP_FORLOOP:
-			P_OP("FORLOOP");
 			{
 				// the last local should be the forloop var
 				--funcInfo.nLocals;
@@ -1272,11 +1189,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 
 				funcStr += "end\n";
 			}
-			P_J;
 			break;
 
 		case OP_LFORPREP:
-			P_OP("LFORPREP");
 			{
 				//showErrorMessage("Unimplemented opcode LFORPREP! exiting!", true);
 				StackValue tableName = codeStack.back();
@@ -1300,11 +1215,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 
 				funcStr += "for index, value in " + tableName.str + "\ndo\n";
 			}
-			P_J;
 			break;
 
 		case OP_LFORLOOP:
-			P_OP("UNIMPLEMENTED LFORLOOP");
 			{
 				//showErrorMessage("Unimplemented opcode LFORLOOP! exiting!", true);
 				funcInfo.locals.erase(--funcInfo.nLocals);
@@ -1317,11 +1230,9 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 				
 				funcStr += "end\n";
 			}
-			P_J;
 			break;
 
 		case OP_CLOSURE:
-			P_OP("CLOSURE");
 			{
 				int closureIndex = GETARG_A(instr);
 				int numUpvalues = GETARG_B(instr);
@@ -1351,7 +1262,6 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 
 				codeStack.push_back(stackValue);
 			}
-			//P_F;
 			break;
 
 		}
