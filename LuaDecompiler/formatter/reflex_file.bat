@@ -1,0 +1,1 @@
+reflex.exe lua_format.l --flex --fast

@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\luac">
+      <UniqueIdentifier>{ab2e104c-4a34-425f-ac7a-b099b6739f48}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\formatter">
+      <UniqueIdentifier>{9c1de5f2-aad3-4e6b-9340-6a325d05d50d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="luac\luac.c">
+      <Filter>Source Files\luac</Filter>
+    </ClCompile>
+    <ClCompile Include="luac\stubs.c">
+      <Filter>Source Files\luac</Filter>
+    </ClCompile>
+    <ClCompile Include="decompiler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="luac\dump.c">
+      <Filter>Source Files\luac</Filter>
+    </ClCompile>
+    <ClCompile Include="luac\opt.c">
+      <Filter>Source Files\luac</Filter>
+    </ClCompile>
+    <ClCompile Include="formatter\lex.yy.cpp">
+      <Filter>Source Files\formatter</Filter>
+    </ClCompile>
+    <ClCompile Include="luac\print.c">
+      <Filter>Source Files\luac</Filter>
+    </ClCompile>
+    <ClCompile Include="formatter\formatter.cpp">
+      <Filter>Source Files\formatter</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="luac\luac.h">
+      <Filter>Source Files\luac</Filter>
+    </ClInclude>
+    <ClInclude Include="decompiler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="luac\print.h">
+      <Filter>Source Files\luac</Filter>
+    </ClInclude>
+    <ClInclude Include="formatter\lex.yy.h">
+      <Filter>Source Files\formatter</Filter>
+    </ClInclude>
+    <ClInclude Include="formatter\formatter.h">
+      <Filter>Source Files\formatter</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="formatter\lua_format.l">
+      <Filter>Source Files\formatter</Filter>
+    </None>
+  </ItemGroup>
+</Project>
