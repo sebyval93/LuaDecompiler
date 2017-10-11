@@ -1307,6 +1307,10 @@ void Decompiler::processPath(std::string pathStr)
 	else
 	{
 		filesystem::recursive_directory_iterator dir(path), end;
+		filesystem::path rootOutputPath = path.parent_path();
+		rootOutputPath.append(path.filename().string() + "_d");
+
+		filesystem::create_directory(rootOutputPath);
 
 		while (dir != end)
 		{
@@ -1315,7 +1319,12 @@ void Decompiler::processPath(std::string pathStr)
 				sourceStr = decompileFile(dir->path().string().c_str());
 				if (!sourceStr.empty())
 				{
-					saveFile(sourceStr, dir->path().parent_path().string() + "\\" + dir->path().stem().string() + "_d" + dir->path().extension().string());
+					filesystem::path newPath = rootOutputPath / dir->path().string().substr(rootOutputPath.string().length() - 2);
+
+					if (!filesystem::exists(newPath.parent_path()))
+						filesystem::create_directory(newPath.parent_path());
+
+					saveFile(sourceStr, newPath.string());
 					std::cout << "File " << dir->path().filename() << " successfully decompiled!\n";
 					m_format.reset();
 					sourceStr.clear();
@@ -1331,7 +1340,7 @@ void Decompiler::processPath(std::string pathStr)
 
 int Decompiler::evalCondition(std::string &funcStr, Instruction* p, Instruction* code, std::vector<Decompiler::StackValue> &codeStack, CondElem currentCond)
 {
-
+	return 0;
 }
 
 int Decompiler::invertCond(int cnd)
