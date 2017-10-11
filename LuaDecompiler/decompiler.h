@@ -3,7 +3,6 @@
 #include <string>
 #include "formatter.h"
 #include "llimits.h"
-//#include "luacdefs.h"
 
 struct Proto;
 

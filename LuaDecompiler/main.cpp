@@ -15,9 +15,10 @@ int main(int argc, const char* argv[])
 		{
 			dec.processPath(argv[i]);
 		}
+
+		std::cout << "\nDone!\n";
 	}
 
-	std::cout << "Done!\n";
 	char c;
 	std::cin >> c;
 }

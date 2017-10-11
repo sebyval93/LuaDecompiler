@@ -9,19 +9,6 @@
 // function that loads binary lua scripts
 extern "C" Proto* loadproto(const char* filename);
 
-#define P_OP(x)
-#define P_NONE
-#define P_AB	
-#define P_F	
-#define P_J	
-#define P_Q	
-#define P_K	
-#define P_L	
-#define P_N	
-#define P_S	
-#define P_U	
-
-
 // TODO: test settable and getindexed extensively
 
 Decompiler::Decompiler()
