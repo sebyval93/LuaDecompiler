@@ -25,7 +25,7 @@ extern "C" Proto* loadproto(const char* filename);
 // TODO: test settable and getindexed extensively
 
 Decompiler::Decompiler()
-	: m_format(Formatter::getInstance())
+	: m_format(Formatter::getInstance()), m_success(true)
 {}
 
 std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
@@ -1299,9 +1299,15 @@ void Decompiler::processPath(std::string pathStr)
 		if (!sourceStr.empty())
 		{
 			saveFile(sourceStr, path.parent_path().string() + "\\" + path.stem().string() + "_d" + path.extension().string());
-			std::cout << "File " << path.filename() << " successfully decompiled!\n";
+
+			if (m_success)
+				std::cout << "File " << path.filename() << " successfully decompiled!\n";
+			else
+				std::cout << "File " << path.filename() << " decompiled with errors!\n";
+
 			sourceStr.clear();
 			m_format.reset();
+			m_success = true;
 		}
 	}
 	else
@@ -1325,13 +1331,18 @@ void Decompiler::processPath(std::string pathStr)
 						filesystem::create_directory(newPath.parent_path());
 
 					saveFile(sourceStr, newPath.string());
-					std::cout << "File " << dir->path().filename() << " successfully decompiled!\n";
+
+					if (m_success)
+						std::cout << "File " << path.filename() << " successfully decompiled!\n";
+					else
+						std::cout << "File " << path.filename() << " decompiled with errors!\n";
+
 					m_format.reset();
 					sourceStr.clear();
+					m_success = true;
 				}
 			}
 
-			sourceStr.clear();
 			++dir;
 		}
 	}
@@ -1465,6 +1476,7 @@ Proto* Decompiler::loadLuaStructure(const char* fileName)
 void Decompiler::showErrorMessage(std::string message, bool exitError)
 {
 	std::cerr << "Error: " << message << '\n';
+	m_success = false;
 
 	if (exitError)
 	{

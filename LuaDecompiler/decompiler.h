@@ -18,6 +18,7 @@ private:
 	enum ValueType { NONE, INT, STRING, STRING_PUSHSELF, STRING_GLOBAL, STRING_LOCAL, NIL, CLOSURE_STRING, TABLE_BRACE };
 
 	Formatter& m_format;
+	bool m_success;
 
 	struct StackValue
 	{
