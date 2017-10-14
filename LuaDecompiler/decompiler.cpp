@@ -92,701 +92,127 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 			break;
 
 		case OP_RETURN:
-			{
-				int returnBase = GETARG_U(instr);
-				std::vector<StackValue> args;
-				std::string tempStr;
-
-				// pop size - base
-				int items = codeStack.size() - returnBase;
-				for (int i = 0; i < items; ++i)
-				{
-					args.push_back(codeStack.back());
-					codeStack.pop_back();
-				}
-
-				tempStr = "return ";
-
-				// insert arguments in the right order
-				for (auto it = args.rbegin(); it != args.rend(); ++it)
-				{
-					tempStr += (*it).str;
-					if (--args.rend() != it)
-						tempStr += ", ";
-				}
-
-				funcStr += (tempStr + '\n');
-			}
+			funcStr += opReturn(GETARG_U(instr), codeStack);
 			break;
 
 		case OP_CALL:
+			funcStr += opCall(GETARG_A(instr), GETARG_B(instr), false, codeStack);
+			break;
+
 		case OP_TAILCALL:
-			{
-
-				int callBase = GETARG_A(instr);
-				int nResults = GETARG_B(instr);
-				std::vector<StackValue> args;
-				std::string funcName;
-				std::string tempStr;
-
-				funcName = codeStack[callBase].str;
-
-				int items = codeStack.size() - callBase;
-				for (int i = 0; i < items - 1; ++i)
-				{
-					if (codeStack.back().type == ValueType::STRING_PUSHSELF)
-					{
-						std::string str = codeStack.back().str;
-						codeStack.pop_back();
-						str = codeStack.back().str + str;
-						codeStack.pop_back();
-
-						StackValue result;
-						result.str = str;
-						result.type = ValueType::STRING_GLOBAL;
-						codeStack.push_back(result);
-					}
-					else
-					{
-						args.push_back(codeStack.back());
-						codeStack.pop_back();
-					}
-				}
-
-				// get funcName
-				funcName = codeStack.back().str;
-				codeStack.pop_back();
-
-				tempStr = funcName + "(";
-
-				// insert arguments in the right order
-				for (auto it = args.rbegin(); it != args.rend(); ++it)
-				{
-					tempStr += (*it).str;
-					if (--args.rend() != it)
-						tempStr += ", ";
-				}
-
-				tempStr += ")";
-
-				if (nResults > 0)
-				{
-					StackValue result;
-					result.str = tempStr;
-					result.type = ValueType::STRING;
-
-					if (GET_OPCODE(instr) == OP_TAILCALL)
-						result.str = "return " + result.str;
-
-					if (nResults != 255)
-					{
-						for (int i = 0; i < nResults; ++i)
-						{
-							codeStack.push_back(result);
-						}
-					}
-					else
-						codeStack.push_back(result);
-
-					if (GET_OPCODE(instr) == OP_TAILCALL)
-					{
-						// assume argb to be 1??
-						// HACK maybe working
-						codeStack.pop_back();
-						funcStr += (result.str + '\n');
-					}
-				}
-				else
-				{
-					funcStr += (tempStr + '\n');
-				};
-
-			}
+			funcStr += opTailCall(GETARG_A(instr), GETARG_B(instr), codeStack);
 			break;
 
 		case OP_PUSHNIL:
-			{
-				int numNils = GETARG_U(instr);
-				StackValue result;
-				result.str = "nil";
-				result.type = ValueType::NIL;
-
-				for (int i = 0; i < numNils; ++i)
-					codeStack.push_back(result);
-			}
+			opPushNil(GETARG_U(instr), codeStack);
 			break;
 
 		case OP_POP:
-			{
-				int numItemsToPop = GETARG_U(instr);
-
-				for (int i = 0; i < numItemsToPop; ++i)
-				{
-					codeStack.pop_back();
-				}
-			}
+			opPop(GETARG_U(instr), codeStack);
 			break;
 
 		case OP_PUSHINT:
-			{
-				StackValue stackValue;
-				stackValue.str = std::to_string(GETARG_S(instr));
-				stackValue.type = ValueType::INT;
-				codeStack.push_back(stackValue);
-			}
+			opPushInt(GETARG_S(instr), codeStack);
 			break;
 
 		case OP_PUSHSTRING:
-			{
-				std::string str;
-				StackValue result;
-
-				str = std::string(tf->kstr[GETARG_U(instr)]->str);
-
-				if (str.find('\n') != std::string::npos || str.find('\t') != std::string::npos)
-				{
-					str.insert(0, "[[");
-					str.insert(str.size(), "]]");
-				}
-				else
-				{
-					str.insert(0, "\"");
-					str.insert(str.size(), "\"");
-				}
-				result.str = str;
-				result.type = ValueType::STRING;
-				codeStack.push_back(result);
-			}
+			opPushString(tf->kstr[GETARG_U(instr)]->str, codeStack);
 			break;
 
 		case OP_PUSHNUM:
-			{
-				StackValue stackValue;
-				stackValue.str = std::to_string(tf->knum[GETARG_U(instr)]);
-
-				// trim trailing zeros, if is a fp number
-				// don't have to check for .0 or 1.0, thx lua!
-				// it is guaranteed to have something beyond the . if fp
-				size_t dotPos = stackValue.str.find('.');
-				if (dotPos != std::string::npos)
-				{
-					for (size_t i = stackValue.str.size() - 1; i > dotPos; --i)
-					{
-						if (stackValue.str[i] == '0')
-							stackValue.str.erase(i);
-						else
-							break;
-					}
-				}
-
-				stackValue.type = ValueType::INT;
-				codeStack.push_back(stackValue);
-			}
+			opPushNum(std::to_string(tf->knum[GETARG_U(instr)]), codeStack);
 			break;
 
 		case OP_PUSHNEGNUM:
-			{
-				StackValue stackValue;
-				stackValue.str = std::to_string(tf->knum[GETARG_U(instr)]);
-
-				// trim trailing zeros, if is a fp number
-				// don't have to check for .0 or 1.0, thx lua!
-				// it is guaranteed to have something beyond the . if fp
-				size_t dotPos = stackValue.str.find('.');
-				if (dotPos != std::string::npos)
-				{
-					for (size_t i = stackValue.str.size() - 1; i > dotPos; --i)
-					{
-						if (stackValue.str[i] == '0')
-							stackValue.str.erase(i);
-						else
-							break;
-					}
-				}
-
-				stackValue.str.insert(0, "-");
-
-				stackValue.type = ValueType::INT;
-				codeStack.push_back(stackValue);
-			}
+			opPushNegNum(std::to_string(tf->knum[GETARG_U(instr)]), codeStack);
 			break;
 
 		case OP_PUSHUPVALUE:
-			{
-				int upvalueIndex = GETARG_U(instr);
-				StackValue result;
-
-				result.str = '%' + funcInfo.upvalues.at(upvalueIndex);
-				result.type = ValueType::STRING;
-
-				codeStack.push_back(result);
-			}
+			opPushUpvalue(GETARG_U(instr), funcInfo, codeStack);
 			break;
 
 		case OP_GETLOCAL:
-			{
-				StackValue stackValue;
-				int localIndex = GETARG_U(instr);
-
-				if (funcInfo.locals.find(localIndex) == funcInfo.locals.end())
-				{
-					// local is not present in the list
-					// name it.
-					std::string localName = "loc" + std::to_string(localIndex - tf->numparams + 1);
-					funcInfo.locals.insert(std::make_pair(localIndex, localName));
-					++funcInfo.nLocals;
-
-					funcStr += "local " + localName + " = " + codeStack[localIndex].str + "\n";
-				}
-
-				stackValue.str = funcInfo.locals.find(GETARG_U(instr))->second;
-				stackValue.type = ValueType::STRING_LOCAL;
-				codeStack.push_back(stackValue);
-			}
+			opGetLocal(GETARG_U(instr), funcInfo, tf, codeStack);
 			break;
 
 		case OP_GETGLOBAL:
-			{
-				StackValue stackValue;
-				stackValue.index = GETARG_U(instr);
-				stackValue.str = std::string(tf->kstr[stackValue.index]->str);
-				stackValue.type = ValueType::STRING_GLOBAL;
-				codeStack.push_back(stackValue);
-			}
+			opGetGlobal(GETARG_U(instr), tf, codeStack);
 			break;
 
 		case OP_GETTABLE:
-			{
-				std::vector<StackValue> args;
-				StackValue result;
-
-				args.push_back(codeStack.back());
-				codeStack.pop_back();
-				args.push_back(codeStack.back());
-				codeStack.pop_back();
-
-				result.str = args[1].str + '[' + args[0].str + ']';
-
-				codeStack.push_back(result);
-			}
+			opGetTable(codeStack);
 			break;
 
 		case OP_GETDOTTED:
-			{
-				int stringIndex = GETARG_U(instr);
-				std::string str = tf->kstr[stringIndex]->str;
-				StackValue target, result;
-
-				target = codeStack.back();
-				codeStack.pop_back();
-				result.str = target.str + "." + str;
-				result.type = ValueType::STRING;
-
-				codeStack.push_back(result);
-			}
+			opGetDotted(GETARG_U(instr), tf, codeStack);
 			break;
 
 		case OP_GETINDEXED:
-			{
-				//showErrorMessage("Unimplemented opcode GETINDEXED! exiting!", true);
-
-				int localIndex = GETARG_U(instr);
-				std::string local = funcInfo.locals.at(localIndex);
-				StackValue target, result;
-
-				target = codeStack.back();
-				codeStack.pop_back();
-
-				result.str = target.str + "[" + local + "]";
-				result.type = target.type;
-
-				codeStack.push_back(result);
-			}
+			opGetIndexed(GETARG_U(instr), funcInfo, codeStack);
 			break;
 
 		case OP_PUSHSELF:
-			{
-				int stringIndex = GETARG_U(instr);
-				std::string str = tf->kstr[stringIndex]->str;
-				StackValue target, result;
-
-				result.str =  ":" + str;
-				result.type = ValueType::STRING_PUSHSELF;
-
-				codeStack.push_back(result);
-			}
+			opPushSelf(GETARG_U(instr), tf, codeStack);
 			break;
 
 		case OP_CREATETABLE:
-			{
-				int numElems = GETARG_U(instr);
-				StackValue result;
-				if (numElems > 0)
-				{
-					result.str += "{ ";
-					result.type = ValueType::TABLE_BRACE;
-					result.index = numElems;
-				}
-				else
-				{
-					result.str = "{}";
-					result.type = ValueType::STRING_GLOBAL;
-				}
-
-				codeStack.push_back(result);
-			}
+			opCreateTable(GETARG_U(instr), codeStack);
 			break;
 
 		case OP_SETLOCAL:
-			{
-				StackValue val;
-				std::string local, result;
-				val = codeStack.back();
-				codeStack.pop_back();
-				int localIndex = GETARG_U(instr);
-
-				if (funcInfo.locals.size() <= localIndex)
-				{
-					std::cout << "WARNING!! SETLOCAL out of bounds!!! ignoring";
-					break;
-				}
-				local = funcInfo.locals.at(localIndex);
-
-				result = local + " = " + val.str + "\n";
-
-				funcStr += result;
-			}
+			funcStr += opSetLocal(GETARG_U(instr), funcInfo, codeStack);
 			break;
 
 		case OP_SETGLOBAL:
-			{
-				StackValue val;
-				std::string global, result;
-				val = codeStack.back();
-				global = tf->kstr[GETARG_U(instr)]->str;
-				//codeStack.pop_back();
-				if (val.type == ValueType::CLOSURE_STRING)
-				{
-					// we have a closure on the stack
-					// insert after "function ", which is 9 chars
-					codeStack.pop_back();
-					val.str.insert(9, global);
-					funcStr += val.str;
-
-				}
-				else
-				{
-					codeStack.pop_back();
-					result = global + " = " + val.str + '\n';
-
-					funcStr += result;
-				}
-
-			}
+			funcStr += opSetGlobal(GETARG_U(instr), tf, codeStack);
 			break;
 
 		case OP_SETTABLE:
-			{
-				int targetIndex = GETARG_A(instr);
-				int numElems = GETARG_B(instr);
-				std::vector<StackValue> args;
-				std::string result;
-
-				if (targetIndex == numElems && numElems == 3)
-				{
-					for (int i = 0; i < numElems; ++i)
-					{
-						args.push_back(codeStack.back());
-						codeStack.pop_back();
-					}
-
-					if (args[1].type == ValueType::STRING_GLOBAL)
-					{
-						args[1].str.erase(0, 1);
-						args[1].str.erase(args[1].str.size() - 1);
-					}
-
-					result = args[2].str + "[" + args[1].str + "] = " + args[0].str;
-
-					funcStr += result + '\n';
-				}
-				else
-				{
-					// unimplemented yet
-					showErrorMessage("SETTABLE " + std::to_string(targetIndex) + " " + std::to_string(numElems) + " not implemented!!!", false);
-				}
-			}
+			funcStr += opSetTable(GETARG_A(instr), GETARG_B(instr), codeStack);
 			break;
 
 		case OP_SETLIST:
-			{
-				int targetIndex = GETARG_A(instr);
-				int numItems = GETARG_B(instr);
-				std::vector<StackValue> args;
-				StackValue target, tableBrace, result;
-
-				if (targetIndex != 0)
-				{
-					showErrorMessage("SETLIST not fully implemented!, first arg is nonzero!", false);
-				}
-
-				for (int i = 0; i < numItems; ++i)
-				{
-					args.push_back(codeStack.back());
-					codeStack.pop_back();
-				}
-
-				tableBrace = codeStack.back();
-				if (codeStack.back().type == ValueType::TABLE_BRACE)
-				{
-					if (tableBrace.index > numItems)
-					{
-
-						codeStack.pop_back();
-
-						for (auto it = args.rbegin(); it != args.rend(); ++it)
-						{
-							result.str += (*it).str;
-
-							if (--args.rend() != it)
-								result.str += ", ";
-						}
-
-						result.str += ";";
-
-						tableBrace.str += result.str;
-						tableBrace.index -= numItems;
-
-						codeStack.push_back(tableBrace);
-
-						break;
-					}
-
-					codeStack.pop_back();
-				}
-
-				result.str = "{ ";
-
-				for (auto it = args.rbegin(); it != args.rend(); ++it)
-				{
-					result.str += (*it).str;
-
-					if (--args.rend() != it)
-						result.str += ", ";
-				}
-
-				result.str += " }";
-				result.type = ValueType::STRING;
-
-				codeStack.push_back(result);
-
-			}
+			opSetList(GETARG_A(instr), GETARG_B(instr), codeStack);
 			break;
 
 		case OP_SETMAP:
-			{
-				int numElems = GETARG_U(instr);
-				StackValue identifier, mapValue, tableBrace, result;
-				std::vector<std::string> args;
-
-				// TODO: nicer name
-				bool hasRemainingElems = false;
-
-				for (int i = 0; i < numElems; ++i)
-				{
-					mapValue = codeStack.back();
-					codeStack.pop_back();
-					identifier = codeStack.back();
-					codeStack.pop_back();
-
-					//remove quotes from identifier
-					if (identifier.type == ValueType::STRING)
-					{
-						identifier.str.erase(0, 1);
-						identifier.str.erase(identifier.str.size() - 1);
-					}
-					else if (identifier.type == ValueType::INT)
-					{
-						identifier.str.insert(0, "[");
-						identifier.str.insert(identifier.str.size(), "]");
-					}
-
-					args.push_back(identifier.str + " = " + mapValue.str);
-				}
-
-				// pop until we find a brace
-				while (codeStack.back().type != ValueType::TABLE_BRACE)
-				{
-					args.push_back(codeStack.back().str);
-					codeStack.pop_back();
-				}
-
-				tableBrace = codeStack.back();
-				codeStack.pop_back();
-				tableBrace.index -= numElems;
-
-				if (tableBrace.index > 0)
-					hasRemainingElems = true;
-
-				result.type = ValueType::STRING_GLOBAL;
-				for (int i = args.size() - 1; i >= 0; --i)
-				{
-					result.str += args[i];
-					if ((i - 1) >= 0)
-						result.str += ", ";
-				}
-
-				if (hasRemainingElems)
-				{
-					codeStack.push_back(tableBrace);
-				}
-				else
-				{
-					result.str.insert(0, tableBrace.str);
-					result.str += " }";
-				}
-
-				codeStack.push_back(result);
-			}
+			opSetMap(GETARG_U(instr), codeStack);
 			break;
 
 		case OP_ADD:
-			{
-				StackValue y, x, result;
-				y = codeStack.back();
-				codeStack.pop_back();
-				x = codeStack.back();
-				codeStack.pop_back();
-
-				result.str = x.str + " + " + y.str;
-				result.type = ValueType::STRING_GLOBAL;
-				codeStack.push_back(result);
-			}
+			opAdd(codeStack);
 			break;
 
 		case OP_ADDI:
-			{
-				int value;
-				StackValue stackValue;
-				value = GETARG_S(instr);
-				stackValue = codeStack.back();
-				StackValue newValue;
-				codeStack.pop_back();
-
-				std::string op;
-				if (value >= 0)
-					op = " + ";
-				else
-					op = "";
-
-				newValue.str = stackValue.str + op + std::to_string(GETARG_S(instr));
-				newValue.type = ValueType::STRING_GLOBAL;
-				codeStack.push_back(newValue);
-			}
+			opAddI(GETARG_S(instr), codeStack);
 			break;
 
 		case OP_SUB:
-			{
-				StackValue y, x, result;
-				y = codeStack.back();
-				codeStack.pop_back();
-				x = codeStack.back();
-				codeStack.pop_back();
-
-				result.str = x.str + " - " + y.str;
-				result.type = ValueType::STRING_GLOBAL;
-				codeStack.push_back(result);
-			}
+			opSub(codeStack);
 			break;
 
 		case OP_MULT:
-			{
-				StackValue y, x, result;
-				y = codeStack.back();
-				codeStack.pop_back();
-				x = codeStack.back();
-				codeStack.pop_back();
-
-				result.str = "( " + x.str + " * " + y.str + " )";
-				result.type = ValueType::STRING_GLOBAL;
-				codeStack.push_back(result);
-			}
+			opMult(codeStack);
 			break;
 
 		case OP_DIV:
-			{
-				StackValue y, x, result;
-				y = codeStack.back();
-				codeStack.pop_back();
-				x = codeStack.back();
-				codeStack.pop_back();
-
-				result.str = "( " + x.str + " / " + y.str + " )";
-				result.type = ValueType::STRING_GLOBAL;
-				codeStack.push_back(result);
-			}
+			opDiv(codeStack);
 			break;
 
 		case OP_POW:
-			{
-				StackValue y, x, result;
-				y = codeStack.back();
-				codeStack.pop_back();
-				x = codeStack.back();
-				codeStack.pop_back();
-
-				result.str = "( " + x.str + " ^ " + y.str + " )";
-				result.type = ValueType::STRING_GLOBAL;
-				codeStack.push_back(result);
-			}
+			opPow(codeStack);
 			break;
 
 		case OP_CONCAT:
-			{
-				int numArgs = GETARG_U(instr);
-				StackValue result;
-				std::vector<StackValue> args;
-				for (int i = 0; i < numArgs; ++i)
-				{
-					args.push_back(codeStack.back());
-					codeStack.pop_back();
-				}
-				for (int i = numArgs - 1; i >= 0; --i)
-				{
-					result.str += args[i].str;
-					if ((i - 1) >= 0)
-						result.str += "..";
-				}
-
-				result.type = ValueType::STRING_GLOBAL;
-				codeStack.push_back(result);
-			}
+			opConcat(GETARG_U(instr), codeStack);
 			break;
 
 		case OP_MINUS:
-			{
-				StackValue x, result;
-				x = codeStack.back();
-				codeStack.pop_back();
-
-				result.str = "-" + x.str;
-				result.type = ValueType::STRING_GLOBAL;
-				codeStack.push_back(result);
-			}
+			opMinus(codeStack);
 			break;
 
 		case OP_NOT:
-			{
-				// showErrorMessage("Unimplemented opcode NOT! exiting!", true);
-				std::string arg = "not " + codeStack.back().str;
-				codeStack.pop_back();
-
-				StackValue result;
-				result.type = ValueType::STRING_GLOBAL;
-				result.str = arg;
-
-				codeStack.push_back(result);
-			}
+			opNot(codeStack);
 			break;
 
 		case OP_JMPNE:
@@ -1121,134 +547,31 @@ std::string Decompiler::decompileFunction(Proto* tf, FuncInfo &funcInfo)
 			break;
 
 		case OP_JMP:
-			{
-				showErrorMessage("Unimplemented opcode JMP! continuing!", false);
-				int dest = GETARG_S(instr);
-				if (!context.empty() && dest < 0)
-				{
-					context.back().type = Context::WHILE;
-				}
-			}
+			opJmp(GETARG_S(instr), context, codeStack);
 			break;
 
 		case OP_PUSHNILJMP:
-			{
-				//showErrorMessage("Unimplemented opcode PUSHNILJMP! exiting!", true);
-				StackValue result;
-				result.str = "nil";
-				result.type = ValueType::NIL;
-
-				codeStack.push_back(result);
-			}
+			opPushNilJmp(context, codeStack);
 			break;
 
 		case OP_FORPREP:
-			{
-				StackValue val1, val2, val3;
-				val3 = codeStack[codeStack.size() - 1];
-				val2 = codeStack[codeStack.size() - 2];
-				val1 = codeStack[codeStack.size() - 3];
-
-
-
-				std::string locName = "for" + std::to_string(funcInfo.nForLoops);
-				++funcInfo.nForLoops;
-				++funcInfo.nForLoopLevel;
-				int locIndex = funcInfo.nLocals;
-				++funcInfo.nLocals;
-				funcInfo.locals.insert(std::make_pair(locIndex, locName));
-				funcStr += "for " + locName + " = " + val1.str + ", " + val2.str + ", " +
-					val3.str + "\ndo\n";
-			}
+			funcStr += opForPrep(funcInfo, codeStack);
 			break;
 
 		case OP_FORLOOP:
-			{
-				// the last local should be the forloop var
-				--funcInfo.nLocals;
-				--funcInfo.nForLoopLevel;
-				funcInfo.locals.erase(funcInfo.nLocals);
-
-				// clear control vars
-				codeStack.pop_back();
-				codeStack.pop_back();
-				codeStack.pop_back();
-
-				funcStr += "end\n";
-			}
+			funcStr += opForLoop(funcInfo, codeStack);
 			break;
 
 		case OP_LFORPREP:
-			{
-				//showErrorMessage("Unimplemented opcode LFORPREP! exiting!", true);
-				StackValue tableName = codeStack.back();
-				codeStack.pop_back();
-
-				StackValue invisTable, index, value;
-				invisTable.type = ValueType::STRING_LOCAL;
-				invisTable.str = "_t";
-				index.type = ValueType::STRING_LOCAL;
-				index.str = "index";
-				value.type = ValueType::STRING_LOCAL;
-				value.str = "value";
-
-				codeStack.push_back(invisTable);
-				codeStack.push_back(index);
-				codeStack.push_back(value);
-
-				funcInfo.locals.insert(std::make_pair(funcInfo.nLocals++, "_t"));
-				funcInfo.locals.insert(std::make_pair(funcInfo.nLocals++, "index"));
-				funcInfo.locals.insert(std::make_pair(funcInfo.nLocals++, "value"));
-
-				funcStr += "for index, value in " + tableName.str + "\ndo\n";
-			}
+			funcStr += opLForPrep(funcInfo, codeStack);
 			break;
 
 		case OP_LFORLOOP:
-			{
-				//showErrorMessage("Unimplemented opcode LFORLOOP! exiting!", true);
-				funcInfo.locals.erase(--funcInfo.nLocals);
-				funcInfo.locals.erase(--funcInfo.nLocals);
-				funcInfo.locals.erase(--funcInfo.nLocals);
-
-				codeStack.pop_back();
-				codeStack.pop_back();
-				codeStack.pop_back();
-				
-				funcStr += "end\n";
-			}
+			funcStr += opLForLoop(funcInfo, codeStack);
 			break;
 
 		case OP_CLOSURE:
-			{
-				int closureIndex = GETARG_A(instr);
-				int numUpvalues = GETARG_B(instr);
-				FuncInfo funcInfo;
-				StackValue stackValue;
-				std::string closureSrc;
-
-				// pop all upvalues if any are found
-				// and register them into funcInfo
-				for (int i = 0; i < numUpvalues; ++i)
-				{
-					StackValue upvalue;
-					upvalue = codeStack.back();
-					codeStack.pop_back();
-
-					funcInfo.upvalues.insert(std::make_pair(numUpvalues - (i + 1), upvalue.str));
-				}
-
-				// decompile closure
-				funcInfo.isMain = false;
-				closureSrc = decompileFunction(tf->kproto[closureIndex], funcInfo);
-
-				stackValue.str = closureSrc;
-				stackValue.type = ValueType::CLOSURE_STRING;
-
-				// closureSrc += "end\n";
-
-				codeStack.push_back(stackValue);
-			}
+			opClosure(GETARG_A(instr), GETARG_B(instr), tf, codeStack);
 			break;
 
 		}
@@ -1320,9 +643,9 @@ void Decompiler::processPath(std::string pathStr)
 					saveFile(sourceStr, newPath.string());
 
 					if (m_success)
-						std::cout << "File " << path.filename() << " successfully decompiled!\n";
+						std::cout << "File " << dir->path().filename() << " successfully decompiled!\n";
 					else
-						std::cout << "File " << path.filename() << " decompiled with errors!\n";
+						std::cout << "File " << dir->path().filename() << " decompiled with errors!\n";
 
 					m_format.reset();
 					sourceStr.clear();
@@ -1336,9 +659,9 @@ void Decompiler::processPath(std::string pathStr)
 
 }
 
-int Decompiler::evalCondition(std::string &funcStr, Instruction* p, Instruction* code, std::vector<Decompiler::StackValue> &codeStack, CondElem currentCond)
+std::string Decompiler::evalCondition(CondElem currentCond)
 {
-	return 0;
+	return "";
 }
 
 int Decompiler::invertCond(int cnd)
@@ -1472,4 +795,830 @@ void Decompiler::showErrorMessage(std::string message, bool exitError)
 		std::cin >> f;
 		std::exit(1);
 	}
+}
+
+void Decompiler::opEnd()
+{
+}
+
+std::string Decompiler::opReturn(int returnBase, std::vector<StackValue>& codeStack)
+{
+	//int returnBase = GETARG_U(instr);
+	std::vector<StackValue> args;
+	std::string tempStr;
+
+	// pop size - base
+	int items = codeStack.size() - returnBase;
+	for (int i = 0; i < items; ++i)
+	{
+		args.push_back(codeStack.back());
+		codeStack.pop_back();
+	}
+
+	tempStr = "return ";
+
+	// insert arguments in the right order
+	for (auto it = args.rbegin(); it != args.rend(); ++it)
+	{
+		tempStr += (*it).str;
+		if (--args.rend() != it)
+			tempStr += ", ";
+	}
+
+	return (tempStr + '\n');
+}
+
+std::string Decompiler::opCall(int callBase, int numResults, bool isTailCall, std::vector<StackValue>& codeStack)
+{
+	std::vector<StackValue> args;
+	std::string funcName;
+	std::string tempStr;
+
+	funcName = codeStack[callBase].str;
+
+	int items = codeStack.size() - callBase;
+	for (int i = 0; i < items - 1; ++i)
+	{
+		if (codeStack.back().type == ValueType::STRING_PUSHSELF)
+		{
+			std::string str = codeStack.back().str;
+			codeStack.pop_back();
+			str = codeStack.back().str + str;
+			codeStack.pop_back();
+
+			StackValue result;
+			result.str = str;
+			result.type = ValueType::STRING_GLOBAL;
+			codeStack.push_back(result);
+		}
+		else
+		{
+			args.push_back(codeStack.back());
+			codeStack.pop_back();
+		}
+	}
+
+	// get funcName
+	funcName = codeStack.back().str;
+	codeStack.pop_back();
+
+	tempStr = funcName + "(";
+
+	// insert arguments in the right order
+	for (auto it = args.rbegin(); it != args.rend(); ++it)
+	{
+		tempStr += (*it).str;
+		if (--args.rend() != it)
+			tempStr += ", ";
+	}
+
+	tempStr += ")";
+
+	if (numResults > 0)
+	{
+		StackValue result;
+		result.str = tempStr;
+		result.type = ValueType::STRING;
+
+		if (isTailCall)
+			result.str = "return " + result.str;
+
+		if (numResults != 255)
+		{
+			for (int i = 0; i < numResults; ++i)
+			{
+				codeStack.push_back(result);
+			}
+		}
+		else
+			codeStack.push_back(result);
+
+		if (isTailCall)
+		{
+			// assume argb to be 1??
+			// HACK maybe working
+			codeStack.pop_back();
+			return (result.str + '\n');
+			//funcStr += (result.str + '\n');
+		}
+
+		return "";
+	}
+	else
+	{
+		//funcStr += (tempStr + '\n');
+		return (tempStr + '\n');
+	}
+}
+
+std::string Decompiler::opTailCall(int callBase, int numResults, std::vector<StackValue>& codeStack)
+{
+	return opCall(callBase, numResults, true, codeStack);
+}
+
+void Decompiler::opPushNil(int numNil, std::vector<StackValue>& codeStack)
+{
+	StackValue result;
+	result.str = "nil";
+	result.type = ValueType::NIL;
+
+	for (int i = 0; i < numNil; ++i)
+		codeStack.push_back(result);
+}
+
+void Decompiler::opPop(int numPop, std::vector<StackValue>& codeStack)
+{
+	for (int i = 0; i < numPop; ++i)
+	{
+		codeStack.pop_back();
+	}
+}
+
+void Decompiler::opPushInt(int num, std::vector<StackValue>& codeStack)
+{
+	StackValue stackValue;
+	stackValue.str = std::to_string(num);
+	stackValue.type = ValueType::INT;
+	codeStack.push_back(stackValue);
+}
+
+void Decompiler::opPushString(std::string str, std::vector<StackValue>& codeStack)
+{
+	StackValue result;
+
+	if (str.find('\n') != std::string::npos || str.find('\t') != std::string::npos)
+	{
+		str.insert(0, "[[");
+		str.insert(str.size(), "]]");
+	}
+	else
+	{
+		str.insert(0, "\"");
+		str.insert(str.size(), "\"");
+	}
+	result.str = str;
+	result.type = ValueType::STRING;
+	codeStack.push_back(result);
+}
+
+void Decompiler::opPushNum(std::string numStr, std::vector<StackValue>& codeStack)
+{
+	StackValue stackValue;
+	stackValue.str = numStr;
+
+	// trim trailing zeros, if is a fp number
+	// don't have to check for .0 or 1.0, thx lua!
+	// it is guaranteed to have something beyond the . if fp
+	size_t dotPos = stackValue.str.find('.');
+	if (dotPos != std::string::npos)
+	{
+		for (size_t i = stackValue.str.size() - 1; i > dotPos; --i)
+		{
+			if (stackValue.str[i] == '0')
+				stackValue.str.erase(i);
+			else
+				break;
+		}
+	}
+
+	stackValue.type = ValueType::INT;
+	codeStack.push_back(stackValue);
+}
+
+void Decompiler::opPushNegNum(std::string numStr, std::vector<StackValue>& codeStack)
+{
+	StackValue stackValue;
+	stackValue.str = numStr;
+
+	// trim trailing zeros, if is a fp number
+	// don't have to check for .0 or 1.0, thx lua!
+	// it is guaranteed to have something beyond the . if fp
+	size_t dotPos = stackValue.str.find('.');
+	if (dotPos != std::string::npos)
+	{
+		for (size_t i = stackValue.str.size() - 1; i > dotPos; --i)
+		{
+			if (stackValue.str[i] == '0')
+				stackValue.str.erase(i);
+			else
+				break;
+		}
+	}
+
+	stackValue.str.insert(0, "-");
+
+	stackValue.type = ValueType::INT;
+	codeStack.push_back(stackValue);
+}
+
+void Decompiler::opPushUpvalue(int upvalueIndex, FuncInfo &funcInfo, std::vector<StackValue>& codeStack)
+{
+	StackValue result;
+
+	result.str = '%' + funcInfo.upvalues.at(upvalueIndex);
+	result.type = ValueType::STRING;
+
+	codeStack.push_back(result);
+}
+
+std::string Decompiler::opGetLocal(int localIndex, FuncInfo &funcInfo, Proto* tf, std::vector<StackValue>& codeStack)
+{
+	StackValue stackValue;
+	std::string tempStr;
+
+	if (funcInfo.locals.find(localIndex) == funcInfo.locals.end())
+	{
+		// local is not present in the list
+		// name it.
+		std::string localName = "loc" + std::to_string(localIndex - tf->numparams + 1);
+		funcInfo.locals.insert(std::make_pair(localIndex, localName));
+		++funcInfo.nLocals;
+
+		tempStr += "local " + localName + " = " + codeStack[localIndex].str + "\n";
+	}
+
+	stackValue.str = funcInfo.locals.find(localIndex)->second;
+	stackValue.type = ValueType::STRING_LOCAL;
+	codeStack.push_back(stackValue);
+
+	return tempStr;
+}
+
+void Decompiler::opGetGlobal(int globalIndex, Proto* tf ,std::vector<StackValue>& codeStack)
+{
+	StackValue stackValue;
+	stackValue.index = globalIndex;
+	stackValue.str = std::string(tf->kstr[stackValue.index]->str);
+	stackValue.type = ValueType::STRING_GLOBAL;
+	codeStack.push_back(stackValue);
+}
+
+void Decompiler::opGetTable(std::vector<StackValue>& codeStack)
+{
+	std::vector<StackValue> args;
+	StackValue result;
+
+	args.push_back(codeStack.back());
+	codeStack.pop_back();
+	args.push_back(codeStack.back());
+	codeStack.pop_back();
+
+	result.str = args[1].str + '[' + args[0].str + ']';
+
+	codeStack.push_back(result);
+}
+
+void Decompiler::opGetDotted(int stringIndex, Proto* tf, std::vector<StackValue>& codeStack)
+{
+	std::string str = tf->kstr[stringIndex]->str;
+	StackValue target, result;
+
+	target = codeStack.back();
+	codeStack.pop_back();
+	result.str = target.str + "." + str;
+	result.type = ValueType::STRING;
+
+	codeStack.push_back(result);
+}
+
+void Decompiler::opGetIndexed(int localIndex, FuncInfo &funcInfo, std::vector<StackValue>& codeStack)
+{
+
+	std::string local = funcInfo.locals.at(localIndex);
+	StackValue target, result;
+
+	target = codeStack.back();
+	codeStack.pop_back();
+
+	result.str = target.str + "[" + local + "]";
+	result.type = target.type;
+
+	codeStack.push_back(result);
+}
+
+void Decompiler::opPushSelf(int stringIndex, Proto* tf, std::vector<StackValue>& codeStack)
+{
+	std::string str = tf->kstr[stringIndex]->str;
+	StackValue target, result;
+
+	result.str = ":" + str;
+	result.type = ValueType::STRING_PUSHSELF;
+
+	codeStack.push_back(result);
+}
+
+void Decompiler::opCreateTable(int numElems, std::vector<StackValue>& codeStack)
+{
+	StackValue result;
+	if (numElems > 0)
+	{
+		result.str += "{ ";
+		result.type = ValueType::TABLE_BRACE;
+		result.index = numElems;
+	}
+	else
+	{
+		result.str = "{}";
+		result.type = ValueType::STRING_GLOBAL;
+	}
+
+	codeStack.push_back(result);
+}
+
+std::string Decompiler::opSetLocal(int localIndex, FuncInfo &funcInfo, std::vector<StackValue>& codeStack)
+{
+	StackValue val;
+	std::string local, result;
+	val = codeStack.back();
+	codeStack.pop_back();
+
+	if (funcInfo.locals.size() <= localIndex)
+	{
+		std::cout << "WARNING!! SETLOCAL out of bounds!!! ignoring";
+		return result;
+	}
+	local = funcInfo.locals.at(localIndex);
+
+	result = local + " = " + val.str + "\n";
+
+	return result;
+}
+
+std::string Decompiler::opSetGlobal(int globalIndex, Proto* tf, std::vector<StackValue>& codeStack)
+{
+	StackValue val;
+	std::string global, result;
+	val = codeStack.back();
+	global = tf->kstr[globalIndex]->str;
+	//codeStack.pop_back();
+	if (val.type == ValueType::CLOSURE_STRING)
+	{
+		// we have a closure on the stack
+		// insert after "function ", which is 9 chars
+		codeStack.pop_back();
+		val.str.insert(9, global);
+		return val.str;
+
+	}
+	else
+	{
+		codeStack.pop_back();
+		result = global + " = " + val.str + '\n';
+
+		return result;
+	}
+}
+
+std::string Decompiler::opSetTable(int targetIndex, int numElems, std::vector<StackValue>& codeStack)
+{
+	std::vector<StackValue> args;
+	std::string result;
+
+	if (targetIndex == numElems && numElems == 3)
+	{
+		for (int i = 0; i < numElems; ++i)
+		{
+			args.push_back(codeStack.back());
+			codeStack.pop_back();
+		}
+
+		if (args[1].type == ValueType::STRING_GLOBAL)
+		{
+			args[1].str.erase(0, 1);
+			args[1].str.erase(args[1].str.size() - 1);
+		}
+
+		result = args[2].str + "[" + args[1].str + "] = " + args[0].str;
+
+		return (result + '\n');
+	}
+	else
+	{
+		// unimplemented yet
+		showErrorMessage("SETTABLE " + std::to_string(targetIndex) + " " + std::to_string(numElems) + " not implemented!!!", false);
+		return result;
+	}
+}
+
+void Decompiler::opSetList(int targetIndex, int numElems, std::vector<StackValue>& codeStack)
+{
+	std::vector<StackValue> args;
+	StackValue target, tableBrace, result;
+
+	if (targetIndex != 0)
+	{
+		showErrorMessage("SETLIST not fully implemented!, first arg is nonzero!", false);
+	}
+
+	for (int i = 0; i < numElems; ++i)
+	{
+		args.push_back(codeStack.back());
+		codeStack.pop_back();
+	}
+
+	tableBrace = codeStack.back();
+	if (codeStack.back().type == ValueType::TABLE_BRACE)
+	{
+		if (tableBrace.index > numElems)
+		{
+
+			codeStack.pop_back();
+
+			for (auto it = args.rbegin(); it != args.rend(); ++it)
+			{
+				result.str += (*it).str;
+
+				if (--args.rend() != it)
+					result.str += ", ";
+			}
+
+			result.str += ";";
+
+			tableBrace.str += result.str;
+			tableBrace.index -= numElems;
+
+			codeStack.push_back(tableBrace);
+
+			return;
+		}
+
+		codeStack.pop_back();
+	}
+
+	result.str = "{ ";
+
+	for (auto it = args.rbegin(); it != args.rend(); ++it)
+	{
+		result.str += (*it).str;
+
+		if (--args.rend() != it)
+			result.str += ", ";
+	}
+
+	result.str += " }";
+	result.type = ValueType::STRING;
+
+	codeStack.push_back(result);
+}
+
+void Decompiler::opSetMap(int numElems, std::vector<StackValue>& codeStack)
+{
+	StackValue identifier, mapValue, tableBrace, result;
+	std::vector<std::string> args;
+
+	// TODO: nicer name
+	bool hasRemainingElems = false;
+
+	for (int i = 0; i < numElems; ++i)
+	{
+		mapValue = codeStack.back();
+		codeStack.pop_back();
+		identifier = codeStack.back();
+		codeStack.pop_back();
+
+		//remove quotes from identifier
+		if (identifier.type == ValueType::STRING)
+		{
+			identifier.str.erase(0, 1);
+			identifier.str.erase(identifier.str.size() - 1);
+		}
+		else if (identifier.type == ValueType::INT)
+		{
+			identifier.str.insert(0, "[");
+			identifier.str.insert(identifier.str.size(), "]");
+		}
+
+		args.push_back(identifier.str + " = " + mapValue.str);
+	}
+
+	// pop until we find a brace
+	while (codeStack.back().type != ValueType::TABLE_BRACE)
+	{
+		args.push_back(codeStack.back().str);
+		codeStack.pop_back();
+	}
+
+	tableBrace = codeStack.back();
+	codeStack.pop_back();
+	tableBrace.index -= numElems;
+
+	if (tableBrace.index > 0)
+		hasRemainingElems = true;
+
+	result.type = ValueType::STRING_GLOBAL;
+	for (int i = args.size() - 1; i >= 0; --i)
+	{
+		result.str += args[i];
+		if ((i - 1) >= 0)
+			result.str += ", ";
+	}
+
+	if (hasRemainingElems)
+	{
+		codeStack.push_back(tableBrace);
+	}
+	else
+	{
+		result.str.insert(0, tableBrace.str);
+		result.str += " }";
+	}
+
+	codeStack.push_back(result);
+}
+
+void Decompiler::opConcat(int numElems, std::vector<StackValue>& codeStack)
+{
+	StackValue result;
+	std::vector<StackValue> args;
+	for (int i = 0; i < numElems; ++i)
+	{
+		args.push_back(codeStack.back());
+		codeStack.pop_back();
+	}
+	for (int i = numElems - 1; i >= 0; --i)
+	{
+		result.str += args[i].str;
+		if ((i - 1) >= 0)
+			result.str += "..";
+	}
+
+	result.type = ValueType::STRING_GLOBAL;
+	codeStack.push_back(result);
+}
+
+void Decompiler::opAdd(std::vector<StackValue>& codeStack)
+{
+	StackValue y, x, result;
+	y = codeStack.back();
+	codeStack.pop_back();
+	x = codeStack.back();
+	codeStack.pop_back();
+
+	result.str = x.str + " + " + y.str;
+	result.type = ValueType::STRING_GLOBAL;
+	codeStack.push_back(result);
+}
+
+void Decompiler::opAddI(int value, std::vector<StackValue>& codeStack)
+{
+	StackValue stackValue;
+	stackValue = codeStack.back();
+	StackValue newValue;
+	codeStack.pop_back();
+
+	std::string op;
+	if (value >= 0)
+		op = " + ";
+	else
+		op = "";
+
+	newValue.str = stackValue.str + op + std::to_string(value);
+	newValue.type = ValueType::STRING_GLOBAL;
+	codeStack.push_back(newValue);
+}
+
+void Decompiler::opSub(std::vector<StackValue>& codeStack)
+{
+	StackValue y, x, result;
+	y = codeStack.back();
+	codeStack.pop_back();
+	x = codeStack.back();
+	codeStack.pop_back();
+
+	result.str = x.str + " - " + y.str;
+	result.type = ValueType::STRING_GLOBAL;
+	codeStack.push_back(result);
+}
+
+void Decompiler::opMult(std::vector<StackValue>& codeStack)
+{
+	StackValue y, x, result;
+	y = codeStack.back();
+	codeStack.pop_back();
+	x = codeStack.back();
+	codeStack.pop_back();
+
+	result.str = "( " + x.str + " * " + y.str + " )";
+	result.type = ValueType::STRING_GLOBAL;
+	codeStack.push_back(result);
+}
+
+void Decompiler::opDiv(std::vector<StackValue>& codeStack)
+{
+	StackValue y, x, result;
+	y = codeStack.back();
+	codeStack.pop_back();
+	x = codeStack.back();
+	codeStack.pop_back();
+
+	result.str = "( " + x.str + " / " + y.str + " )";
+	result.type = ValueType::STRING_GLOBAL;
+	codeStack.push_back(result);
+}
+
+void Decompiler::opPow(std::vector<StackValue>& codeStack)
+{
+	StackValue y, x, result;
+	y = codeStack.back();
+	codeStack.pop_back();
+	x = codeStack.back();
+	codeStack.pop_back();
+
+	result.str = "( " + x.str + " ^ " + y.str + " )";
+	result.type = ValueType::STRING_GLOBAL;
+	codeStack.push_back(result);
+}
+
+void Decompiler::opMinus(std::vector<StackValue>& codeStack)
+{
+	StackValue x, result;
+	x = codeStack.back();
+	codeStack.pop_back();
+
+	result.str = "-" + x.str;
+	result.type = ValueType::STRING_GLOBAL;
+	codeStack.push_back(result);
+}
+
+void Decompiler::opNot(std::vector<StackValue>& codeStack)
+{
+	// showErrorMessage("Unimplemented opcode NOT! exiting!", true);
+	std::string arg = "not " + codeStack.back().str;
+	codeStack.pop_back();
+
+	StackValue result;
+	result.type = ValueType::STRING_GLOBAL;
+	result.str = arg;
+
+	codeStack.push_back(result);
+}
+
+std::string Decompiler::opForPrep(FuncInfo &funcInfo, std::vector<StackValue>& codeStack)
+{
+	StackValue val1, val2, val3;
+	std::string result;
+	val3 = codeStack[codeStack.size() - 1];
+	val2 = codeStack[codeStack.size() - 2];
+	val1 = codeStack[codeStack.size() - 3];
+
+
+
+	std::string locName = "for" + std::to_string(funcInfo.nForLoops);
+	++funcInfo.nForLoops;
+	++funcInfo.nForLoopLevel;
+	int locIndex = funcInfo.nLocals;
+	++funcInfo.nLocals;
+	funcInfo.locals.insert(std::make_pair(locIndex, locName));
+	result += "for " + locName + " = " + val1.str + ", " + val2.str + ", " +
+		val3.str + "\ndo\n";
+
+	return result;
+}
+
+std::string Decompiler::opForLoop(FuncInfo & funcInfo, std::vector<StackValue>& codeStack)
+{
+	std::string result;
+	// the last local should be the forloop var
+	--funcInfo.nLocals;
+	--funcInfo.nForLoopLevel;
+	funcInfo.locals.erase(funcInfo.nLocals);
+
+	// clear control vars
+	codeStack.pop_back();
+	codeStack.pop_back();
+	codeStack.pop_back();
+
+	result = "end\n";
+
+	return result;
+}
+
+std::string Decompiler::opLForPrep(FuncInfo & funcInfo, std::vector<StackValue>& codeStack)
+{
+	//showErrorMessage("Unimplemented opcode LFORPREP! exiting!", true);
+	StackValue tableName = codeStack.back();
+	codeStack.pop_back();
+
+	StackValue invisTable, index, value;
+	invisTable.type = ValueType::STRING_LOCAL;
+	invisTable.str = "_t";
+	index.type = ValueType::STRING_LOCAL;
+	index.str = "index";
+	value.type = ValueType::STRING_LOCAL;
+	value.str = "value";
+
+	codeStack.push_back(invisTable);
+	codeStack.push_back(index);
+	codeStack.push_back(value);
+
+	funcInfo.locals.insert(std::make_pair(funcInfo.nLocals++, "_t"));
+	funcInfo.locals.insert(std::make_pair(funcInfo.nLocals++, "index"));
+	funcInfo.locals.insert(std::make_pair(funcInfo.nLocals++, "value"));
+
+	return ("for index, value in " + tableName.str + "\ndo\n");
+}
+
+std::string Decompiler::opLForLoop(FuncInfo & funcInfo, std::vector<StackValue>& codeStack)
+{
+	std::string result;
+	//showErrorMessage("Unimplemented opcode LFORLOOP! exiting!", true);
+	funcInfo.locals.erase(--funcInfo.nLocals);
+	funcInfo.locals.erase(--funcInfo.nLocals);
+	funcInfo.locals.erase(--funcInfo.nLocals);
+
+	codeStack.pop_back();
+	codeStack.pop_back();
+	codeStack.pop_back();
+
+	result = "end\n";
+
+	return result;
+}
+
+void Decompiler::opClosure(int closureIndex, int numUpvalues, Proto* tf, std::vector<StackValue> &codeStack)
+{
+	FuncInfo funcInfo;
+	StackValue stackValue;
+	std::string closureSrc;
+
+	// pop all upvalues if any are found
+	// and register them into funcInfo
+	for (int i = 0; i < numUpvalues; ++i)
+	{
+		StackValue upvalue;
+		upvalue = codeStack.back();
+		codeStack.pop_back();
+
+		funcInfo.upvalues.insert(std::make_pair(numUpvalues - (i + 1), upvalue.str));
+	}
+
+	// decompile closure
+	funcInfo.isMain = false;
+	closureSrc = decompileFunction(tf->kproto[closureIndex], funcInfo);
+
+	stackValue.str = closureSrc;
+	stackValue.type = ValueType::CLOSURE_STRING;
+
+	// closureSrc += "end\n";
+
+	codeStack.push_back(stackValue);
+}
+
+void Decompiler::opJmpne(int destLine, int currLine, std::vector<Context>& context, std::vector<StackValue>& codeStack)
+{
+}
+
+void Decompiler::opJmpeq(int destLine, int currLine, std::vector<Context>& context, std::vector<StackValue>& codeStack)
+{
+}
+
+void Decompiler::opJmplt(int destLine, int currLine, std::vector<Context>& context, std::vector<StackValue>& codeStack)
+{
+}
+
+void Decompiler::opJmple(int destLine, int currLine, std::vector<Context>& context, std::vector<StackValue>& codeStack)
+{
+}
+
+void Decompiler::opJmpgt(int destLine, int currLine, std::vector<Context>& context, std::vector<StackValue>& codeStack)
+{
+}
+
+void Decompiler::opJmpge(int destLine, int currLine, std::vector<Context>& context, std::vector<StackValue>& codeStack)
+{
+}
+
+void Decompiler::opJmpt(int destLine, int currLine, std::vector<Context>& context, std::vector<StackValue>& codeStack)
+{
+}
+
+void Decompiler::opJmpf(int destLine, int currLine, std::vector<Context>& context, std::vector<StackValue>& codeStack)
+{
+}
+
+void Decompiler::opJmpont(int destLine, int currLine, std::vector<Context>& context, std::vector<StackValue>& codeStack)
+{
+}
+
+void Decompiler::opJmponf(int destLine, int currLine, std::vector<Context>& context, std::vector<StackValue>& codeStack)
+{
+}
+
+void Decompiler::opJmp(int destLine, std::vector<Context>& context, std::vector<StackValue>& codeStack)
+{
+	showErrorMessage("Unimplemented opcode JMP! continuing!", false);
+	if (!context.empty() && destLine < 0)
+	{
+		context.back().type = Context::WHILE;
+	}
+}
+
+void Decompiler::opPushNilJmp(std::vector<Context>& context, std::vector<StackValue>& codeStack)
+{
+	//showErrorMessage("Unimplemented opcode PUSHNILJMP! exiting!", true);
+	StackValue result;
+	result.str = "nil";
+	result.type = ValueType::NIL;
+
+	codeStack.push_back(result);
 }

@@ -13,7 +13,7 @@ int main(int argc, const char* argv[])
 	{
 		for (int i = 1; i < argc; ++i)
 		{
-			dec.processPath(argv[i]);
+			dec.processPath(std::string(argv[i]));
 		}
 
 		std::cout << "\nDone!\n";
