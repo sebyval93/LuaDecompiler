@@ -20,7 +20,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #define INITIAL (0)
-#define YY_NUM_RULES (25)
+#define YY_NUM_RULES (22)
 
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
@@ -116,20 +116,20 @@ int yyFlexLexer::yylex()
 #line 7 "lua_format.l"
 {
 
-    //printf("%s", yytext);
-
-	format.appendStr(yytext);
+    format.comment(std::string(yytext), false);
 
 }
 
 
             YY_BREAK
-          case 2: // rule at line 12: (?:[\x5b][\x5b][^\x5d]*[\x5d]+(?:[^\x5d][^\x5d]*[\x5d]+)*[\x5d])
+          case 2: // rule at line 11: (?:[\x5b][\x5b][^\x5d]*[\x5d]+)
             YY_USER_ACTION
-#line 12 "lua_format.l"
+#line 11 "lua_format.l"
 {
 
-    format.appendStr(yytext);
+	// TODO: handle nested [[ [[ ]] ]]
+
+    format.comment(std::string(yytext), true);
 
 }
 
@@ -140,7 +140,7 @@ int yyFlexLexer::yylex()
 #line 16 "lua_format.l"
 {
 
-    format.appendStr(yytext);
+    format.string(std::string(yytext));
 
 }
 
@@ -151,9 +151,7 @@ int yyFlexLexer::yylex()
 #line 20 "lua_format.l"
 {
 
-    //printf("%s", yytext);
-
-    format.appendStr(yytext);
+    format.semicolon(std::string(yytext));
 
     unput('\n');
 
@@ -161,94 +159,42 @@ int yyFlexLexer::yylex()
 
 
             YY_BREAK
-          case 5: // rule at line 26: (?:\Q})))\E)
+          case 5: // rule at line 25: (?:(?:\Q})\E)[\x29]+[,][\x20])
             YY_USER_ACTION
-#line 26 "lua_format.l"
+#line 25 "lua_format.l"
 {
 
-	format.decreaseParan();
-
-	format.decreaseIndent();
-
-    //printf("\n%s}))", format.generateIndent());
-
-    format.appendStr("\n").append(format.generateIndent()).append("}))");
+    format.tableEnd(std::string(yytext));
 
 }
 
 
             YY_BREAK
-          case 6: // rule at line 33: (?:\Q}))\E)
+          case 6: // rule at line 29: (?:(?:\Q})\E)[\x29]+[,])
+            YY_USER_ACTION
+#line 29 "lua_format.l"
+{
+
+    format.tableEnd(std::string(yytext));
+
+}
+
+
+            YY_BREAK
+          case 7: // rule at line 33: (?:(?:\Q})\E)[\x29]+)
             YY_USER_ACTION
 #line 33 "lua_format.l"
 {
 
-	format.decreaseParan();
-
-	format.decreaseIndent();
-
-    //printf("\n%s})", generateIndent());
-
-    format.appendStr("\n").append(format.generateIndent()).append("})");
+    format.tableEnd(std::string(yytext));
 
 }
 
 
             YY_BREAK
-          case 7: // rule at line 40: (?:\Q}))), \E)
+          case 8: // rule at line 37: (?:\Q({\E)
             YY_USER_ACTION
-#line 40 "lua_format.l"
-{
-
-	format.decreaseParan();
-
-	format.decreaseIndent();
-
-    //printf("\n%s}),\n%s", generateIndent(), generateIndent());
-
-    format.appendStr("\n" + format.generateIndent() + "})),\n" + format.generateIndent());
-
-}
-
-
-            YY_BREAK
-          case 8: // rule at line 47: (?:\Q})), \E)
-            YY_USER_ACTION
-#line 47 "lua_format.l"
-{
-
-	format.decreaseParan();
-
-	format.decreaseIndent();
-
-    //printf("\n%s}),\n%s", generateIndent(), generateIndent());
-
-    format.appendStr("\n" + format.generateIndent() + "}),\n" + format.generateIndent());
-
-}
-
-
-            YY_BREAK
-          case 9: // rule at line 54: (?:\Q})),\E)
-            YY_USER_ACTION
-#line 54 "lua_format.l"
-{
-
-	format.decreaseParan();
-
-	format.decreaseIndent();
-
-    //printf("\n%s}),\n%s", generateIndent(), generateIndent());
-
-    format.appendStr("\n" + format.generateIndent() + "}),\n" + format.generateIndent());
-
-}
-
-
-            YY_BREAK
-          case 10: // rule at line 61: (?:\Q({\E)
-            YY_USER_ACTION
-#line 61 "lua_format.l"
+#line 37 "lua_format.l"
 {
 
     unput('{');
@@ -257,9 +203,9 @@ int yyFlexLexer::yylex()
 
 
             YY_BREAK
-          case 11: // rule at line 65: (?:\Q{ \E)
+          case 9: // rule at line 41: (?:\Q{ \E)
             YY_USER_ACTION
-#line 65 "lua_format.l"
+#line 41 "lua_format.l"
 {
 
     unput('{');
@@ -268,18 +214,12 @@ int yyFlexLexer::yylex()
 
 
             YY_BREAK
-          case 12: // rule at line 69: (?:\Q{\E)
+          case 10: // rule at line 45: (?:\Q{\E)
             YY_USER_ACTION
-#line 69 "lua_format.l"
+#line 45 "lua_format.l"
 {
 
-    //printf("\n%s%s", generateIndent(), yytext);
-
-    format.appendStr("\n" + format.generateIndent() + yytext);
-
-    format.increaseIndent();
-
-	format.setWithinTable(true);
+    format.tableStart(std::string(yytext));
 
     unput('\n');
 
@@ -287,9 +227,9 @@ int yyFlexLexer::yylex()
 
 
             YY_BREAK
-          case 13: // rule at line 77: (?:\Q})\E)
+          case 11: // rule at line 50: (?:\Q})\E)
             YY_USER_ACTION
-#line 77 "lua_format.l"
+#line 50 "lua_format.l"
 {
 
     unput('}');
@@ -298,9 +238,9 @@ int yyFlexLexer::yylex()
 
 
             YY_BREAK
-          case 14: // rule at line 81: (?:\Q}, \E)
+          case 12: // rule at line 54: (?:\Q}, \E)
             YY_USER_ACTION
-#line 81 "lua_format.l"
+#line 54 "lua_format.l"
 {
 
     unput(',');
@@ -311,18 +251,12 @@ int yyFlexLexer::yylex()
 
 
             YY_BREAK
-          case 15: // rule at line 86: (?:\Q},\E)
+          case 13: // rule at line 59: (?:\Q},\E)
             YY_USER_ACTION
-#line 86 "lua_format.l"
+#line 59 "lua_format.l"
 {
 
-	format.decreaseIndent();
-
-    //printf("\n%s%s", generateIndent(), yytext);
-
-    format.appendStr("\n" + format.generateIndent() + yytext);
-
-	format.setWithinTable(false);
+    format.tableEnd(std::string(yytext));
 
     unput('\n');
 
@@ -330,58 +264,20 @@ int yyFlexLexer::yylex()
 
 
             YY_BREAK
-          case 16: // rule at line 94: (?:\Q}\E)
+          case 14: // rule at line 64: (?:\Q}\E)
             YY_USER_ACTION
-#line 94 "lua_format.l"
+#line 64 "lua_format.l"
 {
 
-    format.decreaseIndent();
-
-    //printf("\n%s%s", generateIndent(), yytext);
-
-    format.appendStr("\n" + format.generateIndent() + yytext);
-
-    format.setWithinTable(false);
-
-    //unput('\n');
+    format.tableEnd(std::string(yytext));
 
 }
 
 
             YY_BREAK
-          case 17: // rule at line 102: (?:\Q(\E)
+          case 15: // rule at line 68: (?:\Q, \E)
             YY_USER_ACTION
-#line 102 "lua_format.l"
-{
-
-	format.increaseParan();
-
-    //printf("%s", yytext);
-
-    format.appendStr(yytext);
-
-}
-
-
-            YY_BREAK
-          case 18: // rule at line 108: (?:\Q)\E)
-            YY_USER_ACTION
-#line 108 "lua_format.l"
-{
-
-    format.decreaseParan();
-
-    //printf("%s", yytext);
-
-    format.appendStr(yytext);
-
-}
-
-
-            YY_BREAK
-          case 19: // rule at line 114: (?:\Q, \E)
-            YY_USER_ACTION
-#line 114 "lua_format.l"
+#line 68 "lua_format.l"
 {
 
     if (format.isWithinTable())
@@ -394,115 +290,92 @@ int yyFlexLexer::yylex()
 
     else
 
-        format.appendStr(yytext);
-
-        //printf("%s", yytext);
+        format.comma(std::string(yytext));
 
 }
 
 
             YY_BREAK
-          case 20: // rule at line 124: (?:\Q,\E)
+          case 16: // rule at line 77: (?:\Q,\E)
             YY_USER_ACTION
-#line 124 "lua_format.l"
+#line 77 "lua_format.l"
 {
+
+	format.comma(std::string(yytext));
 
     if (format.isWithinTable())
 
     {
 
-        //printf("%s", yytext);
-
-        format.appendStr(yytext);
-
         unput('\n');
 
     }
 
-    else
+}
 
-        format.appendStr(yytext);
 
-        //printf("%s", yytext);
+            YY_BREAK
+          case 17: // rule at line 85: ^(?:function.*)
+            YY_USER_ACTION
+#line 85 "lua_format.l"
+{
+
+    format.functionStart(std::string(yytext));
 
 }
 
 
             YY_BREAK
-          case 21: // rule at line 136: ^(?:function.*)
+          case 18: // rule at line 89: ^(?:if.*(?:then))
             YY_USER_ACTION
-#line 136 "lua_format.l"
+#line 89 "lua_format.l"
 {
 
-    format.increaseIndent();
-
-    //printf("%s", yytext);
-
-    format.appendStr(yytext);
+    format.conditionStart(std::string(yytext));
 
 }
 
 
             YY_BREAK
-          case 22: // rule at line 142: ^(?:if.*(?:then))
+          case 19: // rule at line 93: ^(?:for.*(?:do))
             YY_USER_ACTION
-#line 142 "lua_format.l"
+#line 93 "lua_format.l"
 {
 
-    format.increaseIndent();
-
-    //printf("%s", yytext);
-
-    format.appendStr(yytext);
+	format.forLoopStart(std::string(yytext));
 
 }
 
 
             YY_BREAK
-          case 23: // rule at line 148: ^(?:end.*)
+          case 20: // rule at line 97: ^(?:end.*)
             YY_USER_ACTION
-#line 148 "lua_format.l"
+#line 97 "lua_format.l"
 {
 
-    format.decreaseIndent();
-
-    // because regex is hard :/
-
-    // deletes the extra tab before the "end" keyword
-
-    //fseek(outputFile, -1, SEEK_CUR);
-
-    //printf("%s\n", yytext);
-
-	format.removeLastChar();
-
-    format.appendStr(yytext).append("\n");
+    format.blockEnd(std::string(yytext));
 
 }
 
 
             YY_BREAK
-          case 24: // rule at line 158: (?:\n)
+          case 21: // rule at line 101: (?:\n)
             YY_USER_ACTION
-#line 158 "lua_format.l"
+#line 101 "lua_format.l"
 {
 
-    //printf("\n%s", generateIndent());
-
-    format.appendStr("\n").append(format.generateIndent());
+    format.newLine(std::string(yytext));
 
 }
 
 
             YY_BREAK
-          case 25: // rule at line 163: .
+          case 22: // rule at line 105: .
             YY_USER_ACTION
-#line 163 "lua_format.l"
+#line 105 "lua_format.l"
 {
 
-    //printf("%s", yytext);
-
-    format.appendStr(yytext);
+    format.anyChar(std::string(yytext));
 
 }
             YY_BREAK
@@ -525,173 +398,173 @@ void reflex_code_INITIAL(reflex::Matcher& m)
 
 S0:
   c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == '}') goto S26;
-  if (c1 == '{') goto S33;
-  if (c1 == 'i') goto S44;
-  if (c1 == 'f') goto S41;
-  if (c1 == 'e') goto S47;
-  if (c1 == '[') goto S17;
-  if (c1 == ';') goto S24;
-  if (c1 == '-') goto S14;
-  if (c1 == ',') goto S38;
-  if (c1 == ')') goto S36;
-  if (c1 == '(') goto S30;
-  if (c1 == '"') goto S20;
-  if (c1 == '\n') goto S50;
-  if ('\0' <= c1) goto S52;
+  if (c1 == '}') goto S25;
+  if (c1 == '{') goto S32;
+  if (c1 == 'i') goto S42;
+  if (c1 == 'f') goto S38;
+  if (c1 == 'e') goto S45;
+  if (c1 == '[') goto S16;
+  if (c1 == ';') goto S23;
+  if (c1 == '-') goto S13;
+  if (c1 == ',') goto S35;
+  if (c1 == '(') goto S29;
+  if (c1 == '"') goto S19;
+  if (c1 == '\n') goto S48;
+  if ('\0' <= c1) goto S50;
   return m.FSM_HALT(c1);
 
-S14:
-  m.FSM_TAKE(25);
+S13:
+  m.FSM_TAKE(22);
   c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == '-') goto S54;
+  if (c1 == '-') goto S52;
   return m.FSM_HALT(c1);
 
-S17:
-  m.FSM_TAKE(25);
+S16:
+  m.FSM_TAKE(22);
   c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == '[') goto S58;
+  if (c1 == '[') goto S56;
   return m.FSM_HALT(c1);
 
-S20:
-  m.FSM_TAKE(25);
+S19:
+  m.FSM_TAKE(22);
   c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == '\\') goto S62;
-  if (c1 == '"') goto S60;
-  if ('\0' <= c1) goto S65;
+  if (c1 == '\\') goto S60;
+  if (c1 == '"') goto S58;
+  if ('\0' <= c1) goto S63;
   return m.FSM_HALT(c1);
 
-S24:
+S23:
   m.FSM_TAKE(4);
   c0 = c1, c1 = m.FSM_CHAR();
   return m.FSM_HALT(c1);
 
-S26:
+S25:
+  m.FSM_TAKE(14);
+  c0 = c1, c1 = m.FSM_CHAR();
+  if (c1 == ',') goto S69;
+  if (c1 == ')') goto S66;
+  return m.FSM_HALT(c1);
+
+S29:
+  m.FSM_TAKE(22);
+  c0 = c1, c1 = m.FSM_CHAR();
+  if (c1 == '{') goto S72;
+  return m.FSM_HALT(c1);
+
+S32:
+  m.FSM_TAKE(10);
+  c0 = c1, c1 = m.FSM_CHAR();
+  if (c1 == ' ') goto S74;
+  return m.FSM_HALT(c1);
+
+S35:
   m.FSM_TAKE(16);
-  c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == ',') goto S71;
-  if (c1 == ')') goto S68;
-  return m.FSM_HALT(c1);
-
-S30:
-  m.FSM_TAKE(17);
-  c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == '{') goto S74;
-  return m.FSM_HALT(c1);
-
-S33:
-  m.FSM_TAKE(12);
   c0 = c1, c1 = m.FSM_CHAR();
   if (c1 == ' ') goto S76;
   return m.FSM_HALT(c1);
 
-S36:
-  m.FSM_TAKE(18);
-  c0 = c1, c1 = m.FSM_CHAR();
-  return m.FSM_HALT(c1);
-
 S38:
-  m.FSM_TAKE(20);
+  m.FSM_TAKE(22);
   c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == ' ') goto S78;
+  if (c1 == 'u') goto S78;
+  if (c1 == 'o') goto S80;
   return m.FSM_HALT(c1);
 
-S41:
-  m.FSM_TAKE(25);
-  c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == 'u') goto S80;
-  return m.FSM_HALT(c1);
-
-S44:
-  m.FSM_TAKE(25);
+S42:
+  m.FSM_TAKE(22);
   c0 = c1, c1 = m.FSM_CHAR();
   if (c1 == 'f') goto S82;
   return m.FSM_HALT(c1);
 
-S47:
-  m.FSM_TAKE(25);
+S45:
+  m.FSM_TAKE(22);
   c0 = c1, c1 = m.FSM_CHAR();
   if (c1 == 'n') goto S86;
   return m.FSM_HALT(c1);
 
+S48:
+  m.FSM_TAKE(21);
+  c0 = c1, c1 = m.FSM_CHAR();
+  return m.FSM_HALT(c1);
+
 S50:
-  m.FSM_TAKE(24);
+  m.FSM_TAKE(22);
   c0 = c1, c1 = m.FSM_CHAR();
   return m.FSM_HALT(c1);
 
 S52:
-  m.FSM_TAKE(25);
-  c0 = c1, c1 = m.FSM_CHAR();
-  return m.FSM_HALT(c1);
-
-S54:
   m.FSM_TAKE(1);
   c0 = c1, c1 = m.FSM_CHAR();
-  if ('\v' <= c1) goto S54;
+  if ('\v' <= c1) goto S52;
   if ('\n' <= c1) return m.FSM_HALT(c1);
-  if ('\0' <= c1 && c1 <= '\t') goto S54;
+  if ('\0' <= c1 && c1 <= '\t') goto S52;
+  return m.FSM_HALT(c1);
+
+S56:
+  c0 = c1, c1 = m.FSM_CHAR();
+  if (c1 == ']') goto S88;
+  if ('\0' <= c1) goto S56;
   return m.FSM_HALT(c1);
 
 S58:
-  c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == ']') goto S88;
-  if ('\0' <= c1) goto S58;
-  return m.FSM_HALT(c1);
-
-S60:
   m.FSM_TAKE(3);
   c0 = c1, c1 = m.FSM_CHAR();
   return m.FSM_HALT(c1);
 
-S62:
+S60:
   c0 = c1, c1 = m.FSM_CHAR();
-  if ('\v' <= c1) goto S65;
+  if ('\v' <= c1) goto S63;
   if ('\n' <= c1) return m.FSM_HALT(c1);
-  if ('\0' <= c1 && c1 <= '\t') goto S65;
+  if ('\0' <= c1 && c1 <= '\t') goto S63;
   return m.FSM_HALT(c1);
 
-S65:
+S63:
   c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == '\\') goto S62;
-  if (c1 == '"') goto S60;
-  if ('\0' <= c1) goto S65;
+  if (c1 == '\\') goto S60;
+  if (c1 == '"') goto S58;
+  if ('\0' <= c1) goto S63;
   return m.FSM_HALT(c1);
 
-S68:
+S66:
+  m.FSM_TAKE(11);
+  c0 = c1, c1 = m.FSM_CHAR();
+  if (c1 == ')') goto S91;
+  return m.FSM_HALT(c1);
+
+S69:
   m.FSM_TAKE(13);
   c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == ')') goto S90;
+  if (c1 == ' ') goto S95;
   return m.FSM_HALT(c1);
 
-S71:
-  m.FSM_TAKE(15);
+S72:
+  m.FSM_TAKE(8);
   c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == ' ') goto S94;
   return m.FSM_HALT(c1);
 
 S74:
-  m.FSM_TAKE(10);
+  m.FSM_TAKE(9);
   c0 = c1, c1 = m.FSM_CHAR();
   return m.FSM_HALT(c1);
 
 S76:
-  m.FSM_TAKE(11);
+  m.FSM_TAKE(15);
   c0 = c1, c1 = m.FSM_CHAR();
   return m.FSM_HALT(c1);
 
 S78:
-  m.FSM_TAKE(19);
   c0 = c1, c1 = m.FSM_CHAR();
+  if (c1 == 'n') goto S97;
   return m.FSM_HALT(c1);
 
 S80:
   c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == 'n') goto S96;
+  if (c1 == 'r') goto S99;
   return m.FSM_HALT(c1);
 
 S82:
   c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == 't') goto S98;
+  if (c1 == 't') goto S103;
   if ('\v' <= c1) goto S82;
   if ('\n' <= c1) return m.FSM_HALT(c1);
   if ('\0' <= c1 && c1 <= '\t') goto S82;
@@ -699,148 +572,139 @@ S82:
 
 S86:
   c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == 'd') goto S103;
+  if (c1 == 'd') goto S108;
   return m.FSM_HALT(c1);
 
 S88:
+  m.FSM_TAKE(2);
   c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == ']') goto S107;
-  if ('\0' <= c1) goto S110;
+  if (c1 == ']') goto S88;
   return m.FSM_HALT(c1);
 
-S90:
-  m.FSM_TAKE(6);
+S91:
+  m.FSM_TAKE(7);
   c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == ',') goto S115;
-  if (c1 == ')') goto S112;
+  if (c1 == ',') goto S112;
+  if (c1 == ')') goto S91;
   return m.FSM_HALT(c1);
 
-S94:
-  m.FSM_TAKE(14);
+S95:
+  m.FSM_TAKE(12);
   c0 = c1, c1 = m.FSM_CHAR();
   return m.FSM_HALT(c1);
 
-S96:
+S97:
   c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == 'c') goto S118;
+  if (c1 == 'c') goto S115;
   return m.FSM_HALT(c1);
 
-S98:
+S99:
   c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == 't') goto S98;
-  if (c1 == 'h') goto S120;
-  if ('\v' <= c1) goto S82;
+  if (c1 == 'd') goto S117;
+  if ('\v' <= c1) goto S99;
   if ('\n' <= c1) return m.FSM_HALT(c1);
-  if ('\0' <= c1 && c1 <= '\t') goto S82;
+  if ('\0' <= c1 && c1 <= '\t') goto S99;
   return m.FSM_HALT(c1);
 
 S103:
   c0 = c1, c1 = m.FSM_CHAR();
-  if (m.FSM_META_BOL()) {
-    m.FSM_TAKE(23, c1);
-  }
-  if ('\v' <= c1) goto S103;
-  if ('\n' <= c1) return m.FSM_HALT(c1);
-  if ('\0' <= c1 && c1 <= '\t') goto S103;
-  return m.FSM_HALT(c1);
-
-S107:
-  m.FSM_TAKE(2);
-  c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == ']') goto S107;
-  if ('\0' <= c1) goto S110;
-  return m.FSM_HALT(c1);
-
-S110:
-  c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == ']') goto S127;
-  if ('\0' <= c1) goto S110;
-  return m.FSM_HALT(c1);
-
-S112:
-  m.FSM_TAKE(5);
-  c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == ',') goto S129;
-  return m.FSM_HALT(c1);
-
-S115:
-  m.FSM_TAKE(9);
-  c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == ' ') goto S131;
-  return m.FSM_HALT(c1);
-
-S118:
-  c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == 't') goto S133;
-  return m.FSM_HALT(c1);
-
-S120:
-  c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == 't') goto S98;
-  if (c1 == 'e') goto S135;
+  if (c1 == 't') goto S103;
+  if (c1 == 'h') goto S122;
   if ('\v' <= c1) goto S82;
   if ('\n' <= c1) return m.FSM_HALT(c1);
   if ('\0' <= c1 && c1 <= '\t') goto S82;
   return m.FSM_HALT(c1);
 
-S125:
-  m.FSM_TAKE(23);
+S108:
   c0 = c1, c1 = m.FSM_CHAR();
+  if (m.FSM_META_BOL()) {
+    m.FSM_TAKE(20, c1);
+  }
+  if ('\v' <= c1) goto S108;
+  if ('\n' <= c1) return m.FSM_HALT(c1);
+  if ('\0' <= c1 && c1 <= '\t') goto S108;
+  return m.FSM_HALT(c1);
+
+S112:
+  m.FSM_TAKE(6);
+  c0 = c1, c1 = m.FSM_CHAR();
+  if (c1 == ' ') goto S129;
+  return m.FSM_HALT(c1);
+
+S115:
+  c0 = c1, c1 = m.FSM_CHAR();
+  if (c1 == 't') goto S131;
+  return m.FSM_HALT(c1);
+
+S117:
+  c0 = c1, c1 = m.FSM_CHAR();
+  if (c1 == 'o') goto S133;
+  if (c1 == 'd') goto S117;
+  if ('\v' <= c1) goto S99;
+  if ('\n' <= c1) return m.FSM_HALT(c1);
+  if ('\0' <= c1 && c1 <= '\t') goto S99;
+  return m.FSM_HALT(c1);
+
+S122:
+  c0 = c1, c1 = m.FSM_CHAR();
+  if (c1 == 't') goto S103;
+  if (c1 == 'e') goto S138;
+  if ('\v' <= c1) goto S82;
+  if ('\n' <= c1) return m.FSM_HALT(c1);
+  if ('\0' <= c1 && c1 <= '\t') goto S82;
   return m.FSM_HALT(c1);
 
 S127:
+  m.FSM_TAKE(20);
   c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == ']') goto S140;
-  if ('\0' <= c1) goto S110;
   return m.FSM_HALT(c1);
 
 S129:
+  m.FSM_TAKE(5);
   c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == ' ') goto S143;
   return m.FSM_HALT(c1);
 
 S131:
-  m.FSM_TAKE(8);
   c0 = c1, c1 = m.FSM_CHAR();
+  if (c1 == 'i') goto S143;
   return m.FSM_HALT(c1);
 
 S133:
   c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == 'i') goto S145;
+  if (m.FSM_META_BOL()) {
+    m.FSM_TAKE(19, c1);
+  }
+  if (c1 == 'd') goto S117;
+  if ('\v' <= c1) goto S99;
+  if ('\n' <= c1) return m.FSM_HALT(c1);
+  if ('\0' <= c1 && c1 <= '\t') goto S99;
   return m.FSM_HALT(c1);
 
-S135:
+S138:
   c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == 't') goto S98;
+  if (c1 == 't') goto S103;
   if (c1 == 'n') goto S147;
   if ('\v' <= c1) goto S82;
   if ('\n' <= c1) return m.FSM_HALT(c1);
   if ('\0' <= c1 && c1 <= '\t') goto S82;
   return m.FSM_HALT(c1);
 
-S140:
-  m.FSM_TAKE(2);
-  c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == ']') goto S140;
-  if ('\0' <= c1) goto S110;
-  return m.FSM_HALT(c1);
-
 S143:
-  m.FSM_TAKE(7);
   c0 = c1, c1 = m.FSM_CHAR();
+  if (c1 == 'o') goto S152;
   return m.FSM_HALT(c1);
 
 S145:
+  m.FSM_TAKE(19);
   c0 = c1, c1 = m.FSM_CHAR();
-  if (c1 == 'o') goto S152;
   return m.FSM_HALT(c1);
 
 S147:
   c0 = c1, c1 = m.FSM_CHAR();
   if (m.FSM_META_BOL()) {
-    m.FSM_TAKE(22, c1);
+    m.FSM_TAKE(18, c1);
   }
-  if (c1 == 't') goto S98;
+  if (c1 == 't') goto S103;
   if ('\v' <= c1) goto S82;
   if ('\n' <= c1) return m.FSM_HALT(c1);
   if ('\0' <= c1 && c1 <= '\t') goto S82;
@@ -852,14 +716,14 @@ S152:
   return m.FSM_HALT(c1);
 
 S154:
-  m.FSM_TAKE(22);
+  m.FSM_TAKE(18);
   c0 = c1, c1 = m.FSM_CHAR();
   return m.FSM_HALT(c1);
 
 S156:
   c0 = c1, c1 = m.FSM_CHAR();
   if (m.FSM_META_BOL()) {
-    m.FSM_TAKE(21, c1);
+    m.FSM_TAKE(17, c1);
   }
   if ('\v' <= c1) goto S156;
   if ('\n' <= c1) return m.FSM_HALT(c1);
@@ -867,7 +731,7 @@ S156:
   return m.FSM_HALT(c1);
 
 S160:
-  m.FSM_TAKE(21);
+  m.FSM_TAKE(17);
   c0 = c1, c1 = m.FSM_CHAR();
   return m.FSM_HALT(c1);
 }

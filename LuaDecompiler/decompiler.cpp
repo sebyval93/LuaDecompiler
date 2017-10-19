@@ -1476,7 +1476,7 @@ std::string Decompiler::opForPrep()
 	++currInfo.nLocals;
 	currInfo.locals.insert(std::make_pair(locIndex, locName));
 	result += "for " + locName + " = " + val1.str + ", " + val2.str + ", " +
-		val3.str + "\ndo\n";
+		val3.str + " do\n";
 
 	return result;
 }
@@ -1524,7 +1524,7 @@ std::string Decompiler::opLForPrep()
 	currInfo.locals.insert(std::make_pair(currInfo.nLocals++, "index"));
 	currInfo.locals.insert(std::make_pair(currInfo.nLocals++, "value"));
 
-	return ("for index, value in " + tableName.str + "\ndo\n");
+	return ("for index, value in " + tableName.str + " do\n");
 }
 
 std::string Decompiler::opLForLoop()
